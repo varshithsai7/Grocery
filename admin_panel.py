@@ -1,4 +1,6 @@
 import sqlite3
+from sales_report import view_sales_report
+
 
 def admin_menu():
     while True:
@@ -7,7 +9,8 @@ def admin_menu():
         print("2. View Products")
         print("3. Update Product")
         print("4. Delete Product")
-        print("5. Logout")
+        print("5. View Sales Report")
+        print("6. Logout")
         choice = input("Enter your choice: ")
         if choice == '1':
             add_product()
@@ -17,7 +20,9 @@ def admin_menu():
             update_product()
         elif choice == '4':
             delete_product()
-        elif choice == '5':
+        elif choice=='5':
+            view_sales_report()
+        elif choice == '6':
             print("Logging out from Admin Panel...")
             break
         else:

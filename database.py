@@ -39,6 +39,18 @@ def connect():
         )
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS customers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT UNIQUE NOT NULL,
+        total_spent REAL DEFAULT 0
+    )
+    """)
+
+    
+
+
 
     conn.commit()
     conn.close()

@@ -25,6 +25,35 @@ def generate_bill():
     conn = sqlite3.connect("grocery.db")  # Connect to DB
     cursor = conn.cursor()
 
+    # 📌 Show all available products before billing begins
+    cursor.execute("SELECT id, name, price, stock FROM products")
+    products = cursor.fetchall()
+
+    if products:
+        print("\n🛍️ Available Products Before Billing:")
+        for p in products:
+            print(f"ID: {p[0]} | Name: {p[1]} | ₹{p[2]} | Stock: {p[3]}")
+    else:
+        print("No products available.")
+        conn.close()
+        return 
+    
+    # customer id,name etc adding to table
+    name = input("Enter customer's name: ")
+    phone = input("Enter customer's phone number: ")
+
+    # Check if customer exists
+    cursor.execute("SELECT id, total_spent FROM customers WHERE phone = ?", (phone,))
+    customer = cursor.fetchone()
+
+    if not customer:
+        cursor.execute("INSERT INTO customers (name, phone, total_spent) VALUES (?, ?, 0)", (name, phone))
+        conn.commit()
+        customer_id = cursor.lastrowid
+    else:
+        customer_id = customer[0]
+
+
     cart = []          # Empty cart to store purchased items
     total_amount = 0.0 # Initialize total amount to zero
 
@@ -74,9 +103,18 @@ def generate_bill():
             # Add item total to grand total amount
             total_amount += item_total
 
+        
         except ValueError:
             # Handle non-integer inputs gracefully
             print("⚠️ Invalid input. Please enter valid numbers.")
+
+    # Update total_spent
+    cursor.execute("UPDATE customers SET total_spent = total_spent + ? WHERE id = ?", (total_amount, customer_id))
+    conn.commit()
+    # Check if eligible for reward
+    cursor.execute("SELECT total_spent FROM customers WHERE id = ?", (customer_id,))
+    total = cursor.fetchone()[0]
+    is_loyal = total >= 1000
 
     # After billing loop ends, print the final bill if cart is not empty
     if cart:
@@ -90,7 +128,20 @@ def generate_bill():
             print("{:<15} {:<10} ₹{:<9} ₹{:<10}".format(item[0], item[1], item[2], item[3]))
         
         print("-" * 40)
-        print(f"💰 Grand Total: ₹{total_amount:.2f}")
+        print(f"💰 Subtotal: ₹{total_amount:.2f}")
+
+        if is_loyal:
+            discount = total_amount * 0.20
+            total_amount -= discount
+            print(f"🎁 Loyal Customer Discount (20%): -₹{discount:.2f}")
+            print(f"🛒 Final Amount to Pay: ₹{total_amount:.2f}")
+        else:
+            print(f"🛒 Total Amount to Pay: ₹{total_amount:.2f}")
+        
+        # update total spent to customers
+        cursor.execute("UPDATE customers SET total_spent = total_spent + ? WHERE id = ?", (total_amount, customer_id))
+        conn.commit()
+
         # Show date and time of billing
         print(f"🕒 Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("-" * 40)
