@@ -58,6 +58,16 @@ def generate_bill():
             # Calculate total price for this item
             item_total = product[2] * quantity
 
+            # add to sales table
+            sale_date = datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')
+
+
+            cursor.execute(
+                "INSERT INTO sales (product_id, product_name, quantity, price_per_unit, total_price, sale_date) VALUES (?, ?, ?, ?, ?, ?)",
+                (product[0], product[1], quantity, product[2], item_total, sale_date)
+            )
+            conn.commit()
+
             # Add item info to the cart list
             cart.append((product[1], quantity, product[2], item_total))
 

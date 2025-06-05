@@ -30,7 +30,7 @@ def add_product():
     name = input("Enter product name: ")
     price = float(input("Enter price: "))
     unit = input("Enter unit (e.g., kg, litre, packet, dozen): ")
-    stock = int(input("Enter stock quantity: "))
+    stock = int(input(f"Enter total stock quantity (in {unit}): "))
     expiry_date = input("Enter expiry date (YYYY-MM-DD) or leave blank: ")
 
     cursor.execute("INSERT INTO products (name, price, stock, expiry_date, unit) VALUES (?, ?, ?, ?, ?)",

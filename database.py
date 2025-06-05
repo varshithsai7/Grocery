@@ -25,6 +25,21 @@ def connect():
         )
     """)
 
+    # create sales table
+    # Create table: sales
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sales (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id INTEGER NOT NULL,
+            product_name TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            price_per_unit REAL NOT NULL,
+            total_price REAL NOT NULL,
+            sale_date TEXT NOT NULL
+        )
+    """)
+
+
     conn.commit()
     conn.close()
 
@@ -44,7 +59,20 @@ def insert_def_admin():
         print("🌟 Default admin added.")
     else:
         print("👑 Admin already exists.")
+    sample_users = [
+        ('manager1', 'manager123', 'manager'),
+        ('manager2', 'manager123', 'manager'),
+        ('cashier1', 'cashier123', 'cashier'),
+    ]
 
+    for username, password, role in sample_users:
+        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        if cursor.fetchone() is None:
+            cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                           (username, password, role))
+            print(f"✅ Default {role} user '{username}' added.")
+
+    conn.commit()
     conn.close()
 
 if __name__ == "__main__":
