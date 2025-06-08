@@ -52,6 +52,7 @@ def generate_bill():
         customer_id = cursor.lastrowid
     else:
         customer_id = customer[0]
+        total_spent = customer[1]
 
 
     cart = []          # Empty cart to store purchased items
@@ -86,16 +87,12 @@ def generate_bill():
 
             # Calculate total price for this item
             item_total = product[2] * quantity
-
+            
             # add to sales table
             sale_date = datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')
 
 
-            cursor.execute(
-                "INSERT INTO sales (product_id, product_name, quantity, price_per_unit, total_price, sale_date) VALUES (?, ?, ?, ?, ?, ?)",
-                (product[0], product[1], quantity, product[2], item_total, sale_date)
-            )
-            conn.commit()
+            
 
             # Add item info to the cart list
             cart.append((product[1], quantity, product[2], item_total))
@@ -108,9 +105,8 @@ def generate_bill():
             # Handle non-integer inputs gracefully
             print("⚠️ Invalid input. Please enter valid numbers.")
 
-    # Update total_spent
-    cursor.execute("UPDATE customers SET total_spent = total_spent + ? WHERE id = ?", (total_amount, customer_id))
-    conn.commit()
+        
+         
     # Check if eligible for reward
     cursor.execute("SELECT total_spent FROM customers WHERE id = ?", (customer_id,))
     total = cursor.fetchone()[0]
@@ -118,6 +114,26 @@ def generate_bill():
 
     # After billing loop ends, print the final bill if cart is not empty
     if cart:
+    
+        sale_date = datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')
+
+        # Insert overall sale
+        cursor.execute(
+            "INSERT INTO sales (customer_id, sale_date, total_amount) VALUES (?, ?, ?)",
+            (customer_id, sale_date, total_amount)
+        )
+        conn.commit()
+        sale_id = cursor.lastrowid  # Get the ID of the inserted sale
+
+        # Insert each item in sales_items table
+        for item in cart:
+            product_name, quantity, price_per_unit, total_price = item
+            cursor.execute(
+                "INSERT INTO sales_items (sale_id, product_name, quantity, price_per_unit, total_price) VALUES (?, ?, ?, ?, ?)",
+                (sale_id, product_name, quantity, price_per_unit, total_price)
+            )
+        conn.commit()
+
         print("\n🧾 FINAL BILL:")
         print("-" * 40)
         print("{:<15} {:<10} {:<10} {:<10}".format("Item", "Qty", "Rate", "Total"))
@@ -142,6 +158,7 @@ def generate_bill():
         cursor.execute("UPDATE customers SET total_spent = total_spent + ? WHERE id = ?", (total_amount, customer_id))
         conn.commit()
 
+    
         # Show date and time of billing
         print(f"🕒 Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("-" * 40)
@@ -174,4 +191,4 @@ def cashier_menu():
 
 # Run the cashier menu only if this file is executed directly
 if __name__ == "__main__":
-    cashier_menu()
+    cashier_menu() 

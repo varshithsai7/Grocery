@@ -30,6 +30,10 @@ def create_new_tables():
         )
     """)
 
+    # Add this before creating tables in set_tables.py
+    
+
+
     print("✅ New tables 'sales' and 'sales_items' created successfully!")
     conn.commit()
     conn.close()
