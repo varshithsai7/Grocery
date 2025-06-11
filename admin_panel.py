@@ -1,6 +1,6 @@
 import sqlite3
 from sales_report import view_sales_report
-
+import time
 
 def admin_menu():
     while True:
@@ -27,13 +27,17 @@ def admin_menu():
             break
         else:
             print("Invalid choice, please try again.")
-
+        time.sleep(1)
 def add_product():
     conn = sqlite3.connect("grocery.db")
     cursor = conn.cursor()
 
     name = input("Enter product name: ")
-    price = float(input("Enter price: "))
+    try:
+        price = float(input("Enter price: "))
+    except ValueError:
+        print("Invalid price entered.")
+        return
     unit = input("Enter unit (e.g., kg, litre, packet, dozen): ")
     stock = int(input(f"Enter total stock quantity (in {unit}): "))
     expiry_date = input("Enter expiry date (YYYY-MM-DD) or leave blank: ")
@@ -51,6 +55,7 @@ def view_products():
     cursor.execute("SELECT id, name, price, stock, expiry_date, unit FROM products")
     products = cursor.fetchall()
 
+    
     if products:
         print("\n📦 --- Product List ---")
         for prod in products:
@@ -105,6 +110,13 @@ def delete_product():
     cursor.execute("SELECT * FROM products WHERE id=?", (product_id,))
     product = cursor.fetchone()
 
+    cursor.execute("SELECT COUNT(*) FROM sales_items WHERE product_id=?", (product_id,))
+    count = cursor.fetchone()[0]
+    if count > 0:
+        print("⚠️ Cannot delete product. It has been sold before.")
+        conn.close()
+        return
+    
     if product:
         confirm = input(f"Are you sure you want to delete '{product[1]}'? (y/n): ").lower()
         if confirm == 'y':

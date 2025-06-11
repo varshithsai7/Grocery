@@ -4,7 +4,7 @@ from admin_panel import admin_menu
 from manager_panel import manager_menu
 from cashier_panel import cashier_menu
 
-def login():
+def cli_login():
     conn=sqlite3.connect("grocery.db")
     cursor=conn.cursor()
 
@@ -30,7 +30,57 @@ def login():
 
     conn.close()
 
+def cli_validate_user(username, password):
+    conn = sqlite3.connect("grocery.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT role FROM users WHERE username = ? AND password = ?", (username, password))
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result else None
 
 
-if __name__ == "__main__":
-    login()
+from flask import Blueprint, render_template, request, redirect, session, url_for
+
+
+auth = Blueprint('auth', "varshith")
+
+def validate_user(username, password):
+    conn = sqlite3.connect("grocery.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, role FROM users WHERE username = ? AND password = ?", (username, password))
+    user = cursor.fetchone()
+    conn.close()
+    return user  # (id, username, role) or None
+
+@auth.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = validate_user(username, password)
+
+        if user:
+            session['user_id'] = user[0]
+            session['username'] = user[1]
+            session['role'] = user[2]
+
+            # Redirect based on role
+            if user[2] == 'admin':
+                return redirect(url_for('admin.admin_home'))
+            elif user[2] == 'manager':
+                return redirect(url_for('manager.manager_home'))
+            elif user[2] == 'cashier':
+                return redirect(url_for('cashier.cashier_home'))
+            else:
+                return render_template('login.html', error="Unknown role!")
+        else:
+            return render_template('login.html', error="❌ Invalid username or password.")
+    return render_template('login.html')
+
+@auth.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('auth.login'))
+
+# if __name__ == "__main__":
+#     login()

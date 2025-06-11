@@ -1,7 +1,7 @@
 import sqlite3
 import datetime
 from sales_report import view_sales_report
-
+import time
 
 def view_products():
     conn = sqlite3.connect("grocery.db")
@@ -336,55 +336,76 @@ def view_audit_log():
 
 def manager_menu():
     while True:
-        print("\n📋 Manager Panel")
-        print("1. View All Products")
-        print("2. Check Low Stock Items")
-        print("3. Check & Auto-Remove Expired Products")
-        print("4. Restock Low Quantity Products")
-        print("5. Add New Product")
-        print("6. Update Product Details")
-        print("7. Search Products")
-        print("8. View Sales Report")
-        print("9. Loyal Customers Report")
-        print("10. Backup Database")
-        print("11. View Audit Log")
-        print("12. Logout")
+        print("\n" + "="*50)
+        print("🛒 Welcome to the Manager Control Panel")
+        print("="*50)
+        print("1. 📦 View All Products")
+        print("2. ⚠️ Check Low Stock Items")
+        print("3. 🗑️ Check & Auto-Remove Expired Products")
+        print("4. 🔄 Restock Products")
+        print("5. ➕ Add New Product")
+        print("6. ✏️ Update Product Details")
+        print("7. 🔍 Search Products")
+        print("8. 📈 View Sales Report")
+        print("9. 🎖️ View Loyal Customers")
+        print("10. 💾 Backup Database")
+        print("11. 📜 View Audit Log")
+        print("12. 🔚 Logout")
+        print("="*50)
 
-        choice = input("Enter your choice: ")
+        choice = input("👉 Enter your choice (1-12): ").strip()
 
-        if choice == '1':
-            view_products()
-        elif choice == '2':
-            check_low_stock()
-        elif choice == '3':
-            check_expiry_products()
-        elif choice == '4':
-            restock_product()
-        elif choice == '5':
-            add_product()
-            manager_audit_log("Add", "Added new product")
-        elif choice == '6':
-            update_product()
-            manager_audit_log("Update", "Updated product details")
-        elif choice == '7':
-            search_products()
-            manager_audit_log("Search", "Searched products")
-        elif choice == '8':
-            view_sales_report()
-            manager_audit_log("View", "Viewed sales report")
-        elif choice == '9':
-            loyal_customers_report()
-            manager_audit_log("View", "Viewed loyal customers report")
-        elif choice == '10':
-            backup_database()
-            manager_audit_log("Backup", "Backed up database")
-        elif choice == '11':
-            view_audit_log()
-        elif choice == '12':
-            print("Logging out from Manager Panel...")
-            break
-        else:
-            print("❌ Invalid choice, please try again.")
+        try:
+            if choice == '1':
+                view_products()
+                manager_audit_log("View", "Viewed all products")
 
-if __name__ == "__main__":
-    manager_menu()
+            elif choice == '2':
+                check_low_stock()
+                manager_audit_log("Check", "Checked low stock items")
+
+            elif choice == '3':
+                check_expiry_products()
+                manager_audit_log("Check", "Checked & removed expired products")
+
+            elif choice == '4':
+                restock_product()
+                manager_audit_log("Restock", "Restocked a product")
+
+            elif choice == '5':
+                add_product()
+                manager_audit_log("Add", "Added new product")
+
+            elif choice == '6':
+                update_product()
+                manager_audit_log("Update", "Updated product details")
+
+            elif choice == '7':
+                search_products()
+                manager_audit_log("Search", "Searched for products")
+
+            elif choice == '8':
+                view_sales_report()
+                manager_audit_log("View", "Viewed sales report")
+
+            elif choice == '9':
+                loyal_customers_report()
+                manager_audit_log("View", "Viewed loyal customers report")
+
+            elif choice == '10':
+                backup_database()
+                manager_audit_log("Backup", "Backed up the database")
+
+            elif choice == '11':
+                view_audit_log()
+
+            elif choice == '12':
+                print("\n👋 Logging out... May your shelves stay stocked and customers stay loyal!")
+                break
+
+            else:
+                print("❗ Invalid input. Please enter a number between 1 and 12.")
+        except Exception as e:
+            print(f"🚨 An error occurred: {e}")
+            manager_audit_log("Error", f"Exception in menu: {e}")
+        time.sleep(1)

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🛒 Grocery Billing</title>
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Josefin Sans', sans-serif;
+      background-color: #fdf6f0;
+      color: #2f2f2f;
+      padding: 20px;
+    }
+
+    h2, h3 {
+      color: #5b2c6f;
+      margin-bottom: 10px;
+    }
+
+    .input-box, .item-box, .qty-box {
+      padding: 10px;
+      margin: 10px 5px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      width: 200px;
+    }
+
+    .customer-info, .mode-selection, .mode-section {
+      margin-bottom: 25px;
+    }
+
+    .row.curved {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 10px;
+    }
+
+    .manual-table {
+      margin-top: 20px;
+    }
+
+    .mode-btn, .add-btn {
+      padding: 10px 25px;
+      background-color: #8e44ad;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      margin: 10px 15px 0 0;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .mode-btn:hover, .add-btn:hover {
+      background-color: #6c3483;
+    }
+
+    .mode-section {
+      display: none;
+    }
+
+    .total-section {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #2e4053;
+    }
+
+    video {
+      width: 300px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 💁 Customer Info -->
+  <div class="customer-info">
+    <h2>🧍 Customer Details</h2>
+    <input type="text" placeholder="👤 Name" class="input-box" id="customerName">
+    <input type="text" placeholder="📞 Phone Number" class="input-box" id="customerPhone">
+  </div>
+
+  <!-- 🔘 Mode Selection -->
+  <div class="mode-selection">
+    <h2>🔄 Choose Billing Mode</h2>
+    <button onclick="showManual()" class="mode-btn">🖊️ Manual Entry</button>
+    <button onclick="showScanner()" class="mode-btn">📷 Scan Barcode</button>
+  </div>
+
+  <!-- ✍️ Manual Billing -->
+  <div id="manualMode" class="mode-section">
+    <h3>📝 Manual Billing</h3>
+    <div id="manual-rows" class="manual-table">
+      <div class="row curved">
+        <input type="text" class="item-box" placeholder="🛍️ Item Name or ID">
+        <input type="number" class="qty-box" placeholder="🔢 Quantity">
+      </div>
+    </div>
+    <button class="add-btn" onclick="addManualRow()">➕ Add Item</button>
+    <div class="total-section" id="manual-total">💰 Total: ₹0.00</div>
+  </div>
+
+  <!-- 📸 Barcode Scanner -->
+  <div id="barcodeMode" class="mode-section">
+    <h3>📷 Scan Item Barcode</h3>
+    <video id="camera" autoplay></video><br>
+    <button onclick="captureBarcode()" class="mode-btn">📸 Capture</button>
+    <div class="total-section" id="barcode-total">💰 Total: ₹0.00</div>
+  </div>
+
+  <script>
+    let manualTotal = 0.0;
+    let barcodeTotal = 0.0;
+
+    function showManual() {
+      document.getElementById('manualMode').style.display = 'block';
+      document.getElementById('barcodeMode').style.display = 'none';
+    }
+
+    function showScanner() {
+      document.getElementById('barcodeMode').style.display = 'block';
+      document.getElementById('manualMode').style.display = 'none';
+      startCamera();
+    }
+
+    function addManualRow() {
+      const table = document.getElementById('manual-rows');
+      const newRow = document.createElement('div');
+      newRow.className = 'row curved';
+      newRow.innerHTML = `
+        <input type="text" class="item-box" placeholder="🛍️ Item Name or ID">
+        <input type="number" class="qty-box" placeholder="🔢 Quantity" onchange="updateManualTotal(this)">
+      `;
+      table.appendChild(newRow);
+    }
+
+    function updateManualTotal(input) {
+      const row = input.parentElement;
+      const qty = parseFloat(input.value);
+      const price = 50; // Placeholder per item cost, replace with database lookup later
+
+      if (!isNaN(qty)) {
+        manualTotal += price * qty;
+        document.getElementById('manual-total').textContent = `💰 Total: ₹${manualTotal.toFixed(2)}`;
+      }
+    }
+
+    function startCamera() {
+      const camera = document.getElementById('camera');
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => {
+          camera.srcObject = stream;
+        })
+        .catch(error => {
+          console.error("Camera access error:", error);
+        });
+    }
+
+    function captureBarcode() {
+      // Dummy simulation
+      const price = 100; // Example price
+      barcodeTotal += price;
+      document.getElementById('barcode-total').textContent = `💰 Total: ₹${barcodeTotal.toFixed(2)}`;
+      alert("📦 Barcode scanned (Simulated). Item added to bill.");
+    }
+  </script>
+
+</body>
+</html>

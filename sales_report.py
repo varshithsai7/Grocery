@@ -14,7 +14,12 @@ def view_sales_report():
         choice = input("Enter your choice: ")
 
         if choice == '1':
-            cursor.execute("SELECT sale_date, product_name, quantity, price_per_unit, total_price FROM sales ORDER BY sale_date DESC")
+            cursor.execute('''
+                SELECT s.sale_date, si.product_name, si.quantity, si.price_per_unit, si.total_price
+                FROM sales s
+                JOIN sales_items si ON s.id = si.sale_id
+                ORDER BY s.sale_date DESC
+            ''')
             sales = cursor.fetchall()
             print("\n🧾 All Sales Records:")
             for sale in sales:
@@ -22,7 +27,12 @@ def view_sales_report():
 
         elif choice == '2':
             date = input("Enter date (YYYY-MM-DD): ")
-            cursor.execute("SELECT product_name, quantity, total_price FROM sales WHERE sale_date = ?", (date,))
+            cursor.execute('''
+                SELECT si.product_name, si.quantity, si.total_price
+                FROM sales s
+                JOIN sales_items si ON s.id = si.sale_id
+                WHERE s.sale_date = ?
+            ''', (date,))
             sales = cursor.fetchall()
             if sales:
                 print(f"\n🗓️ Sales on {date}:")
@@ -32,7 +42,7 @@ def view_sales_report():
                 print("No sales on that date.")
 
         elif choice == '3':
-            cursor.execute("SELECT SUM(total_price) FROM sales")
+            cursor.execute("SELECT SUM(total_price) FROM sales_items")
             total = cursor.fetchone()[0]
             print(f"\n💰 Total Revenue So Far: ₹{total:.2f}" if total else "No sales data yet.")
 

@@ -4,7 +4,7 @@ def create_new_tables():
     conn = sqlite3.connect("grocery.db")
     cursor = conn.cursor()
 
-    # 📜 Sales Table
+    # 📜 Sales Table — one row per bill (not per item)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS sales (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -15,7 +15,7 @@ def create_new_tables():
         )
     """)
 
-    # 📦 Sales Items Table
+    # 📦 Sales Items Table — holds each item in the bill
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS sales_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,11 +30,7 @@ def create_new_tables():
         )
     """)
 
-    # Add this before creating tables in set_tables.py
-    
-
-
-    print("✅ New tables 'sales' and 'sales_items' created successfully!")
+    print("✅ Tables 'sales' and 'sales_items' created successfully!")
     conn.commit()
     conn.close()
 
