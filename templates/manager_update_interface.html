@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Update Products - Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+    body {
+        background-color: #f8f0fc;
+        font-family: 'Segoe UI', sans-serif;
+        color: #333;
+        padding: 30px;
+    }
+
+    h2 {
+        color: #6C3483;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .flash-message {
+        padding: 12px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .flash-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+
+    th, td {
+        padding: 8px 10px; /* reduced padding */
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+        font-size: 15px;
+        transition: transform 0.2s ease, font-size 0.2s ease;
+        vertical-align: middle;
+    }
+
+    th {
+        background-color: #BA68C8;
+        color: white;
+        font-size: 16px;
+    }
+
+    .hoverable-row {
+        position: relative;
+        transition: background-color 0.3s;
+    }
+
+    .hoverable-row:hover {
+        background-color: #f3e0f7;
+    }
+
+    .hover-img {
+        display: none;
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translate(-50%, 30px);
+        width: 220px;
+        border: 3px solid #6C3483;
+        border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        background: white;
+        z-index: 10;
+    }
+
+    .hoverable-row:hover .hover-img {
+        display: block;
+    }
+
+    form.inline-form {
+        display: inline;
+        margin: 0 2px;
+    }
+
+    button.action-btn {
+        padding: 4px 8px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 14px;
+        transition: background-color 0.2s, transform 0.2s;
+        margin: 2px;
+    }
+
+    button.action-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .inc { background-color: #81c784; color: white; }
+    .inc:hover { background-color: #66bb6a; }
+
+    .dec { background-color: #e57373; color: white; }
+    .dec:hover { background-color: #ef5350; }
+
+    .del { background-color: #d32f2f; color: white; }
+    .del:hover { background-color: #b71c1c; }
+
+    .undo-btn {
+        background-color: #6C3483;
+        color: white;
+        margin-bottom: 20px;
+        padding: 8px 16px;
+        font-size: 15px;
+    }
+
+    .undo-btn:hover {
+        background-color: #512e5f;
+    }
+
+    .add-form {
+        max-width: 600px;
+        margin: auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .add-form input {
+        width: 100%;
+        margin-top: 8px;
+        padding: 10px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+    }
+
+    .add-form input:focus {
+        border-color: #6C3483;
+        outline: none;
+    }
+
+    .add-form button {
+        margin-top: 15px;
+        background-color: #6C3483;
+        color: white;
+        border: none;
+        padding: 10px;
+        width: 100%;
+        border-radius: 6px;
+        font-weight: bold;
+        font-size: 15px;
+    }
+
+    .add-form button:hover {
+        background-color: #512e5f;
+    }
+
+    a {
+        display: inline-block;
+        margin-top: 25px;
+        color: #6C3483;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    a:hover {
+        text-decoration: underline;
+        color: #512e5f;
+    }
+</style>
+
+</head>
+<body>
+    <h2>🛠️ Update Products</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('manager_undo') }}" method="post">
+        <button class="action-btn undo-btn" type="submit">↩️ Undo Last Action</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Unit</th>
+                <th>Expiry</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+    {% for product in products %}
+    <tr class="hoverable-row">
+        <form method="post" action="{{ url_for('manager_update_product_fields') }}">
+            <input type="hidden" name="product_id" value="{{ product[0] }}">
+            <td>{{ product[0] }}</td>
+            <td><input type="text" name="name" value="{{ product[1] }}" required></td>
+            <td><input type="number" step="0.01" name="price" value="{{ product[2] }}" required></td>
+            <td><input type="number" name="stock" value="{{ product[3] }}" required></td>
+            <td><input type="text" name="unit" value="{{ product[4] }}" required></td>
+            <td><input type="date" name="expiry_date" value="{{ product[5] }}" required></td>
+            <td>
+                <button class="action-btn inc" type="submit">💾</button>
+        </form>
+        <form class="inline-form" method="post" action="{{ url_for('manager_update_action') }}">
+            <input type="hidden" name="action" value="increment">
+            <input type="hidden" name="product_id" value="{{ product[0] }}">
+            <button class="action-btn inc" type="submit">＋</button>
+        </form>
+        <form class="inline-form" method="post" action="{{ url_for('manager_update_action') }}">
+            <input type="hidden" name="action" value="decrement">
+            <input type="hidden" name="product_id" value="{{ product[0] }}">
+            <button class="action-btn dec" type="submit">－</button>
+        </form>
+        <form class="inline-form" method="post" action="{{ url_for('manager_update_action') }}">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="product_id" value="{{ product[0] }}">
+            <button class="action-btn del" type="submit">🗑️</button>
+        </form>
+            </td>
+            {% if product[6] %}
+            <td colspan="7">
+                <img class="hover-img" src="{{ product[6] }}" alt="Product Image">
+            </td>
+            {% endif %}
+        </tr>
+    {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="add-form">
+        <h3>Add New Product</h3>
+        <form method="post" action="{{ url_for('manager_add_product') }}">
+            <input type="text" name="name" placeholder="Product Name" required>
+            <input type="number" step="0.01" name="price" placeholder="Price" required>
+            <input type="number" name="stock" placeholder="Stock" required>
+            <input type="text" name="unit" placeholder="Unit (e.g., kg, packet)" required>
+            <input type="date" name="expiry_date" required>
+            <input type="text" name="image_url" placeholder="Image URL (optional)">
+            <button type="submit">➕ Add Product</button>
+        </form>
+    </div>
+
+    <a href="{{ url_for('manager_dashboard') }}">⬅ Back to Dashboard</a>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>⚠️ Low Stock Products</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(to right, #fff0f5, #f3e5f5);
+            font-family: 'Segoe UI', sans-serif;
+            padding: 50px;
+            color: #333;
+        }
+
+        h2 {
+            text-align: center;
+            color: #9B59B6;
+            font-weight: bold;
+            margin-bottom: 30px;
+            animation: fadeDown 0.6s ease;
+        }
+
+        table {
+            width: 90%;
+            margin: auto;
+            border-collapse: collapse;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        th {
+            background-color: #af7ac5;
+            color: white;
+            padding: 12px;
+            text-align: center;
+        }
+
+        td {
+            padding: 12px;
+            text-align: center;
+            background-color: #fdf6ff;
+            transition: background-color 0.3s ease;
+        }
+
+        tr:hover td {
+            background-color: #f8eafc;
+        }
+
+        td.low-stock {
+            color: #c0392b;
+            font-weight: bold;
+            animation: pulseRed 1.2s infinite;
+        }
+
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulseRed {
+            0% { color: #c0392b; }
+            50% { color: #e74c3c; }
+            100% { color: #c0392b; }
+        }
+
+        .safe-message {
+            text-align: center;
+            font-size: 18px;
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+            text-decoration: none;
+            color: #884EA0;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: #5e3370;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>⚠️ Low Stock Products (≤ {{ threshold }} units)</h2>
+
+    {% if products %}
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Product Name</th>
+                <th>Stock</th>
+                <th>Unit</th>
+            </tr>
+            {% for prod in products %}
+            <tr>
+                <td>{{ prod[0] }}</td>
+                <td>{{ prod[1] }}</td>
+                <td class="low-stock">{{ prod[2] }}</td>
+                <td>{{ prod[3] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p class="safe-message">✅ All products are above the safe stock level.</p>
+    {% endif %}
+
+    <a class="back-link" href="{{ url_for('manager_dashboard') }}">⬅ Back to Dashboard</a>
+
+</body>
+</html>

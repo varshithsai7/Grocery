@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Final Bill</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h2>🧾 FINAL BILL</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Rate (₹)</th>
+                <th>Total (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cart %}
+            <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.price_per_unit }}</td>
+                <td>{{ item.total_price }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p>💰 Subtotal: ₹{{ subtotal }}</p>
+    {% if discount %}
+        <p>🎁 Loyal Customer Discount (20%): -₹{{ discount }}</p>
+    {% endif %}
+    <h3>🛒 Final Amount: ₹{{ final_amount }}</h3>
+    <p>🕒 Time: {{ time }}</p>
+    <a href="/cashier">🔙 Back to Dashboard</a>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>📜 Manager Audit Log</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(to right, #f3f4f6, #ede7f6);
+            font-family: 'Georgia', serif;
+            padding: 50px;
+            color: #2c3e50;
+        }
+
+        h2 {
+            text-align: center;
+            color: #512E5F;
+            font-size: 38px;
+            margin-bottom: 40px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            position: relative;
+        }
+
+        h2::after {
+            content: '';
+            width: 100px;
+            height: 4px;
+            background-color: #884EA0;
+            display: block;
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+
+        table {
+            width: 100%;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            animation: rise 0.8s ease;
+        }
+
+        @keyframes rise {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        th {
+            background-color: #6C3483;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        td {
+            padding: 13px;
+            text-align: center;
+            color: #333;
+            font-size: 15px;
+            border-bottom: 1px solid #f0eef1;
+        }
+
+        tr:hover {
+            background-color: #f9f0ff;
+            transition: background-color 0.3s ease;
+        }
+
+        .no-logs {
+            text-align: center;
+            color: #777;
+            font-size: 18px;
+            margin-top: 30px;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 40px;
+            font-weight: bold;
+            text-decoration: none;
+            color: #884EA0;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: #5e3370;
+            text-decoration: underline;
+        }
+
+        .highlight-action {
+            font-weight: bold;
+            color: #af30b2;
+        }
+
+        .scroll-shadow {
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>📜 Manager Audit Log</h2>
+
+    {% if logs %}
+    <div class="scroll-shadow">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.id }}</td>
+                    <td class="highlight-action">{{ log.action }}</td>
+                    <td>{{ log.details }}</td>
+                    <td>{{ log.timestamp }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="no-logs">🛡️ No heroic actions recorded yet.</p>
+    {% endif %}
+
+    <a href="{{ url_for('manager_dashboard') }}" class="back-link">⬅ Back to Dashboard</a>
+
+</body>
+</html>

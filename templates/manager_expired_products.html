@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manager - Expired Products</title>
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(to right, #ffe0e9, #e0f7fa);
+            font-family: 'Josefin Sans', sans-serif;
+            margin: 0;
+            padding: 60px 20px;
+            color: #333;
+        }
+
+        h2 {
+            text-align: center;
+            color: #c62828;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        p {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #444;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 30px auto;
+            max-width: 600px;
+            background: #fff8f6;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            padding: 20px 30px;
+        }
+
+        li {
+            font-size: 1.1rem;
+            padding: 12px;
+            border-bottom: 1px solid #ffdede;
+            color: #b71c1c;
+        }
+
+        li:last-child {
+            border-bottom: none;
+        }
+
+        strong {
+            color: #d50000;
+        }
+
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 40px;
+            text-decoration: none;
+            background: #00796b;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-weight: bold;
+            width: max-content;
+            margin-left: auto;
+            margin-right: auto;
+            transition: background 0.3s ease;
+        }
+
+        a:hover {
+            background: #004d40;
+        }
+    </style>
+</head>
+<body>
+    <h2>🚫 Expired Products</h2>
+
+    {% if expired_products %}
+        <p>The following expired items were removed:</p>
+        <ul>
+            {% for prod in expired_products %}
+                <li><strong>{{ prod[1] }}</strong> (Expired on: {{ prod[2] }})</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>✅ No expired products found. Everything is fresh and safe!</p>
+    {% endif %}
+
+    <a href="{{ url_for('manager_dashboard') }}">⬅ Back to Dashboard</a>
+</body>
+</html>

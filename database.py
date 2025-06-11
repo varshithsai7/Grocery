@@ -52,6 +52,22 @@ def connect():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS last_action (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id INTEGER,
+            action TEXT,
+            prev_name TEXT,
+            prev_price REAL,
+            prev_stock INTEGER,
+            prev_unit TEXT,
+            prev_expiry TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
+    """)
+    
+
     conn.commit()
     conn.close()
 

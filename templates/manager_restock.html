@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🔄 Restock Products</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(to right, #f5e6ff, #e8daef);
+            font-family: 'Segoe UI', sans-serif;
+            padding: 60px;
+            color: #4a235a;
+        }
+
+        .container {
+            max-width: 600px;
+            background: #fdf6fd;
+            padding: 40px;
+            margin: auto;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(123, 90, 170, 0.3);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        h2 {
+            text-align: center;
+            color: #7d3c98;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        label {
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border-radius: 8px;
+            border: 1px solid #d2b4de;
+            font-size: 16px;
+        }
+
+        input[type="submit"] {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background-color: #8e44ad;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #a569bd;
+            transform: scale(1.03);
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #884EA0;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: #5e3370;
+            text-decoration: underline;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>🔄 Restock Products</h2>
+
+        <form method="POST">
+            <label for="product_id">Select Product:</label>
+            <select name="product_id" required>
+                {% for prod in products %}
+                    <option value="{{ prod[0] }}">
+                        {{ prod[1] }} (Stock: {{ prod[2] }} {{ prod[3] }})
+                    </option>
+                {% endfor %}
+            </select>
+
+            <label for="quantity">Add Quantity:</label>
+            <input type="number" name="quantity" min="1" required>
+
+            <input type="submit" value="Restock">
+        </form>
+
+        <a class="back-link" href="{{ url_for('manager_dashboard') }}">⬅ Back to Dashboard</a>
+    </div>
+
+</body>
+</html>

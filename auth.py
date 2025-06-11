@@ -66,16 +66,16 @@ def login():
 
             # Redirect based on role
             if user[2] == 'admin':
-                return redirect(url_for('admin.admin_home'))
+                return redirect(url_for('admin_dashboard'))
             elif user[2] == 'manager':
-                return redirect(url_for('manager.manager_home'))
+                return redirect(url_for('manager_dashboard'))
             elif user[2] == 'cashier':
-                return redirect(url_for('cashier.cashier_home'))
+                return redirect(url_for('cashier_dashboard'))
             else:
-                return render_template('login.html', error="Unknown role!")
+                return render_template('home.html', error="Unknown role!")
         else:
-            return render_template('login.html', error="❌ Invalid username or password.")
-    return render_template('login.html')
+            return render_template('home.html', error="❌ Invalid username or password.")
+    return render_template('home.html')
 
 @auth.route('/logout')
 def logout():
