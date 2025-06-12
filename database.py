@@ -30,17 +30,17 @@ def connect():
     """)
 
     # Create table: sales
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS sales (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER NOT NULL,
-            product_name TEXT NOT NULL,
-            quantity INTEGER NOT NULL,
-            price_per_unit REAL NOT NULL,
-            total_price REAL NOT NULL,
-            sale_date TEXT NOT NULL
-        )
-    """)
+    # cursor.execute("""
+    #     CREATE TABLE IF NOT EXISTS sales (
+    #         id INTEGER PRIMARY KEY AUTOINCREMENT,
+    #         product_id INTEGER NOT NULL,
+    #         product_name TEXT NOT NULL,
+    #         quantity INTEGER NOT NULL,
+    #         price_per_unit REAL NOT NULL,
+    #         total_price REAL NOT NULL,
+    #         sale_date TEXT NOT NULL
+    #     )
+    # """)
 
     # Create table: customers
     cursor.execute("""
@@ -198,8 +198,8 @@ def drop_all_tables():
     cursor = conn.cursor()
 
     # List of tables to drop
-    tables = ['users', 'products', 'sales', 'customers']
-
+    # tables = ['users', 'products', 'sales', 'customers']
+    # tables=['sales']
     for table in tables:
         try:
             cursor.execute(f"DROP TABLE IF EXISTS {table}")
@@ -217,4 +217,6 @@ if __name__ == "__main__":
     insert_def_admin()
     insert_sample_products()
     print("✅ Database and tables created successfully.")
-    # drop_all_tables()
+    
+    
+

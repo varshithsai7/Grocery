@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import sqlite3
@@ -8,18 +9,42 @@ app = Flask("MyGRow", static_url_path='/static')
 app.secret_key = 'varsh'
 
 
-# savelast option
-def save_last_action(product_id, action_type, conn):
-    cursor = conn.cursor()
-    cursor.execute("SELECT name, price, stock, unit, expiry_date FROM products WHERE id = ?", (product_id,))
-    prev = cursor.fetchone()
-    if prev:
-        cursor.execute("""
-            INSERT INTO last_action (product_id, action, prev_name, prev_price, prev_stock, prev_unit, prev_expiry)
-            VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (product_id, action_type, prev[0], prev[1], prev[2], prev[3], prev[4])
-        )
+# explicit closing
+def close_open_connection(conn):
+    try:
+        conn.close()
+    except:
+        pass
+
+
+
+
+@contextmanager
+def get_db_connection():
+    conn = sqlite3.connect("grocery.db", timeout=10)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    try:
+        yield conn
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
+# savelast option
+def save_last_action(product_id, action_type):
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, price, stock, unit, expiry_date FROM products WHERE id = ?", (product_id,))
+        prev = cursor.fetchone()
+        if prev:
+            cursor.execute("""
+                INSERT INTO last_action (product_id, action, prev_name, prev_price, prev_stock, prev_unit, prev_expiry)
+                VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (product_id, action_type, *prev)
+            )
+
 
 # Helper function to get all products from the database
 def get_all_products():
@@ -177,6 +202,32 @@ def delete_product(product_id):
         return redirect('/admin/products')
     return redirect('/login')
 
+# delete sale item
+@app.route('/admin/delete-sale/<int:sale_item_id>', methods=['POST'])
+def delete_sale_entry(sale_item_id):
+    if 'role' not in session or session['role'] != 'admin':
+        return redirect('/login')
+
+    conn = sqlite3.connect("grocery.db")
+    cursor = conn.cursor()
+
+    # Delete the item from sales_items
+    cursor.execute("DELETE FROM sales_items WHERE id = ?", (sale_item_id,))
+
+    # Optional: Clean up any orphan sales with no items left
+    cursor.execute("""
+        DELETE FROM sales
+        WHERE id NOT IN (SELECT sale_id FROM sales_items)
+    """)
+
+    conn.commit()
+    conn.close()
+
+    return redirect('/admin/sales-report')
+
+
+
+
 @app.route('/admin/edit-product/<int:product_id>', methods=['GET', 'POST'])
 def edit_product(product_id):
     if 'role' in session and session['role'] == 'admin':
@@ -220,19 +271,38 @@ def view_sales_report():
     conn = sqlite3.connect("grocery.db")
     cursor = conn.cursor()
 
+    # Sales table for the full report
     cursor.execute("""
-        SELECT si.id, p.name, si.quantity, p.price, (si.quantity * p.price) as total
+        SELECT si.id, p.name, si.quantity, p.price, (si.quantity * p.price), s.sale_date as total
         FROM sales_items si
         JOIN products p ON si.product_id = p.id
         JOIN sales s ON si.sale_id = s.id
-        
     """)
-    
     report = cursor.fetchall()
+
+    # Separate chart data
+    cursor.execute("""
+        SELECT p.name, SUM(s.quantity) AS total_quantity, SUM(s.quantity * p.price) AS total_revenue
+        FROM sales_items s
+        JOIN products p ON s.product_id = p.id
+        GROUP BY p.name
+        ORDER BY total_quantity DESC
+
+    """)
+    chart_data = cursor.fetchall()
+
+    # Prepare chart data lists
+    product_names = [row[0] for row in chart_data]
+    product_quantities = [row[1] for row in chart_data]
+    product_revenues = [row[2] for row in chart_data]
+
     conn.close()
 
-    return render_template("admin_sales_report.html", report=report)
-
+    return render_template("admin_sales_report.html",
+                           report=report,
+                           product_names=product_names,
+                           product_quantities=product_quantities,
+                           product_revenues=product_revenues)
 
 
 # manager features
@@ -320,11 +390,16 @@ def manager_expired_products():
 
 @app.route('/manager/undo', methods=['POST'])
 def manager_undo():
-    conn = sqlite3.connect("grocery.db")
+    conn = sqlite3.connect("grocery.db", timeout=10)
+    conn.execute("PRAGMA journal_mode=WAL;")
     cursor = conn.cursor()
 
     # Fetch the last action from undo log
-    cursor.execute("SELECT * FROM last_action ORDER BY id DESC LIMIT 1")
+    cursor.execute("""
+    SELECT id, product_id, action, prev_name, prev_price, prev_stock, prev_unit, prev_expiry
+    FROM last_action
+    ORDER BY id DESC LIMIT 1
+    """)
     last = cursor.fetchone()
 
     if last:
@@ -402,10 +477,10 @@ def manager_add_product():
             """, (name, price, stock, unit, expiry_date))
             product_id = cursor.lastrowid
             cursor.execute("""
-                INSERT INTO last_action (product_id, action, name, price, stock, unit, expiry_date)
-                VALUES (?, 'delete', ?, ?, ?, ?, ?)""",
-                (product_id, name, price, stock, unit, expiry)
-            )
+                INSERT INTO last_action (product_id, action, prev_name, prev_price, prev_stock, prev_unit, prev_expiry)
+                VALUES (?, 'delete', ?, ?, ?, ?, ?)
+            """, (product_id, name, price, stock, unit, expiry_date))
+
             conn.commit()
             conn.close()
             return redirect('/manager/add_product')
@@ -418,40 +493,45 @@ def manager_add_product():
 @app.route('/manager/update_action', methods=['POST'])
 def manager_update_action():
     try:
-        product_id = request.form['product_id']
-        action = request.form['action']
+        product_id = int(request.form['product_id'])
+        action = request.form['action'].lower()
 
-        conn = sqlite3.connect("grocery.db")
-        cursor = conn.cursor()
+        with sqlite3.connect("grocery.db", timeout=5) as conn:
+            conn.execute("PRAGMA busy_timeout = 5000;")
+            cursor = conn.cursor()
 
-        # Fetch current product info for logging
-        cursor.execute("SELECT name, price, stock, unit, expiry_date FROM products WHERE id = ?", (product_id,))
-        product = cursor.fetchone()
+            cursor.execute("SELECT name, price, stock, unit, expiry_date FROM products WHERE id = ?", (product_id,))
+            product = cursor.fetchone()
 
-        if action == 'increment':
-            cursor.execute("UPDATE products SET stock = stock + 1 WHERE id = ?", (product_id,))
-        elif action == 'decrement':
-            cursor.execute("UPDATE products SET stock = stock - 1 WHERE id = ? AND stock > 0", (product_id,))
-        elif action == 'delete':
-            cursor.execute("DELETE FROM products WHERE id = ?", (product_id,))
+            if not product:
+                flash("Product not found!", "error")
+                return redirect(url_for('manager_update_interface'))
 
-        # Log the change
-        cursor.execute("""
-            INSERT INTO last_action (product_id, action, name, price, stock, unit, expiry_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (product_id, action, *product)
-        )
+            if action == 'increment':
+                cursor.execute("UPDATE products SET stock = stock + 1 WHERE id = ?", (product_id,))
+            elif action == 'decrement':
+                cursor.execute("UPDATE products SET stock = stock - 1 WHERE id = ? AND stock > 0", (product_id,))
+            elif action == 'delete':
+                cursor.execute("DELETE FROM products WHERE id = ?", (product_id,))
+            else:
+                flash("Invalid action received!", "error")
+                return redirect(url_for('manager_update_interface'))
 
-        conn.commit()
+            # Log change
+            cursor.execute("""
+                INSERT INTO last_action (product_id, action, prev_name, prev_price, prev_stock, prev_unit, prev_expiry)
+                VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (product_id, action, *product)
+            )
+
         flash('Action performed!', 'success')
+
     except sqlite3.OperationalError as e:
-        flash("Database is busy. Please try again in a moment.", "error")
-    finally:
-        conn.close()
-    
+        flash("⚠️ Database is busy. Please wait and try again.", "error")
+    except Exception as e:
+        flash(f"Unexpected error: {str(e)}", "error")
+
     return redirect(url_for('manager_update_interface'))
-
-
 
 # ------------------- Update Product -------------------
 @app.route('/manager/update-product/<int:product_id>', methods=['GET', 'POST'])
@@ -518,16 +598,17 @@ def manager_update_product_fields():
 
     # Log the update
     cursor.execute("""
-        INSERT INTO last_action (product_id, action, name, price, stock, unit, expiry_date)
-        VALUES (?, 'update', ?, ?, ?, ?, ?)
-    """, (product_id, *old_data))
+    INSERT INTO last_action (product_id, action, prev_name, prev_price, prev_stock, prev_unit, prev_expiry)
+    VALUES (?, 'update', ?, ?, ?, ?, ?)
+""", (product_id, *old_data))
 
+    if old_data:
     # Now update the product
-    cursor.execute("""
-        UPDATE products
-        SET name = ?, price = ?, stock = ?, unit = ?, expiry_date = ?
-        WHERE id = ?
-    """, (name, price, stock, unit, expiry, product_id))
+        cursor.execute("""
+            UPDATE products
+            SET name = ?, price = ?, stock = ?, unit = ?, expiry_date = ?
+            WHERE id = ?
+        """, (name, price, stock, unit, expiry, product_id))
 
     conn.commit()
     conn.close()
@@ -542,7 +623,7 @@ def manager_update_product_fields():
 def manager_update_interface():
     conn = sqlite3.connect("grocery.db")
     cursor = conn.cursor()
-
+    
     if request.method == 'POST':
         action = request.form['action']
         product_id = int(request.form.get('product_id'))
@@ -619,11 +700,39 @@ def manager_sales_report():
     if 'role' in session and session['role'] == 'manager':
         conn = sqlite3.connect("grocery.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM sales")
+
+        cursor.execute("""
+            SELECT 
+                s.id AS sale_id, 
+                GROUP_CONCAT(si.product_name, ', ') AS product_names, 
+                SUM(si.quantity) AS total_quantity, 
+                s.total_amount, 
+                s.sale_date 
+            FROM sales s 
+            JOIN sales_items si ON s.id = si.sale_id 
+            GROUP BY s.id 
+            ORDER BY s.sale_date DESC
+        """)
+        
         sales = cursor.fetchall()
+        # Additional query for product-wise sales
+        cursor.execute("""
+            SELECT 
+                si.product_name, 
+                SUM(si.quantity) AS total_quantity_sold, 
+                SUM(si.quantity * si.price_per_unit) AS total_sales_amount,
+                s.sale_date
+            FROM sales_items si
+            JOIN sales s ON si.sale_id = s.id
+            GROUP BY si.product_name, s.sale_date
+            ORDER BY s.sale_date DESC
+        """)
+        product_sales = cursor.fetchall()
         conn.close()
-        return render_template("manager_sales_report.html", sales=sales)
+        return render_template("manager_sales_report.html", sales=sales,product_sales=product_sales)
+    
     return redirect('/login')
+
 
 
 # ------------------- Loyal Customers -------------------
@@ -726,10 +835,10 @@ def cashier_generate_bill():
         discount = subtotal * 0.20 if is_loyal else 0
         final_amount = subtotal - discount
 
-        sale_date = datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')
+        sale_date = datetime.datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')
         cursor.execute(
-            "INSERT INTO sales (customer_id, sale_date, total_amount) VALUES (?, ?, ?)",
-            (customer_id, sale_date, final_amount)
+            "INSERT INTO sales (customer_id, sale_date, total_amount,name) VALUES (?, ?,?, ?)",
+            (customer_id, sale_date, final_amount,name)
         )
         conn.commit()
         sale_id = cursor.lastrowid
@@ -744,7 +853,7 @@ def cashier_generate_bill():
         conn.commit()
         conn.close()
 
-        return render_template('cashier_bill_summary.html', cart=cart, subtotal=subtotal, discount=discount if is_loyal else 0, final_amount=final_amount, time=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        return render_template('cashier_bill_summary.html', cart=cart, subtotal=subtotal, discount=discount if is_loyal else 0, final_amount=final_amount, time=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
     return render_template('cashier_generate_bill.html')
 
@@ -753,4 +862,5 @@ def cashier_generate_bill():
 
 # Keep this always 💖
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
+

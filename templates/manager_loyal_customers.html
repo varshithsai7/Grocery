@@ -114,9 +114,9 @@
             <tbody>
                 {% for cust in customers %}
                     <tr>
-                        <td>{{ cust.name }} <span class="glow-badge">Loyal</span></td>
-                        <td>{{ cust.phone }}</td>
-                        <td>₹{{ cust.total_spent }}</td>
+                        <td>{{ cust[0] }} <span class="glow-badge">Loyal</span></td>
+                        <td>{{ cust[1] }}</td>
+                        <td>₹{{ cust[2] }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

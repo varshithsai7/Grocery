@@ -190,7 +190,7 @@
     {% endwith %}
 
     <form action="{{ url_for('manager_undo') }}" method="post">
-        <button class="action-btn undo-btn" type="submit">↩️ Undo Last Action</button>
+        <button class="action-btn undo-btn" type="submit" onclick="this.disabled=true; this.form.submit();">↩️ Undo Last Action</button>
     </form>
 
     <table>
@@ -217,22 +217,22 @@
             <td><input type="text" name="unit" value="{{ product[4] }}" required></td>
             <td><input type="date" name="expiry_date" value="{{ product[5] }}" required></td>
             <td>
-                <button class="action-btn inc" type="submit">💾</button>
+                <button class="action-btn inc" type="submit" onclick="this.disabled=true; this.form.submit();">💾</button>
         </form>
         <form class="inline-form" method="post" action="{{ url_for('manager_update_action') }}">
             <input type="hidden" name="action" value="increment">
             <input type="hidden" name="product_id" value="{{ product[0] }}">
-            <button class="action-btn inc" type="submit">＋</button>
+            <button class="action-btn inc" type="submit" onclick="this.disabled=true; this.form.submit();">＋</button>
         </form>
         <form class="inline-form" method="post" action="{{ url_for('manager_update_action') }}">
             <input type="hidden" name="action" value="decrement">
             <input type="hidden" name="product_id" value="{{ product[0] }}">
-            <button class="action-btn dec" type="submit">－</button>
+            <button class="action-btn dec" type="submit" onclick="this.disabled=true; this.form.submit();">－</button>
         </form>
         <form class="inline-form" method="post" action="{{ url_for('manager_update_action') }}">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="product_id" value="{{ product[0] }}">
-            <button class="action-btn del" type="submit">🗑️</button>
+            <button class="action-btn del" type="submit" onclick="this.disabled=true; this.form.submit();">🗑️</button>
         </form>
             </td>
             {% if product[6] %}
@@ -259,5 +259,6 @@
     </div>
 
     <a href="{{ url_for('manager_dashboard') }}">⬅ Back to Dashboard</a>
+    
 </body>
 </html>

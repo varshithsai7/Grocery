@@ -11,7 +11,7 @@
             padding: 40px;
             color: #333;
         }
-
+        
         h2 {
             text-align: center;
             color: #6C3483;
@@ -21,14 +21,8 @@
         }
 
         @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         table {
@@ -45,6 +39,7 @@
             padding: 14px 18px;
             text-align: center;
             border-bottom: 1px solid #eee;
+            vertical-align: middle;
         }
 
         th {
@@ -55,6 +50,15 @@
         tr:hover {
             background-color: #f2eaf6;
             transition: background-color 0.3s ease;
+        }
+
+        .product-badge {
+            display: inline-block;
+            margin: 2px;
+            padding: 5px 10px;
+            background-color: #D2B4DE;
+            border-radius: 20px;
+            font-size: 14px;
         }
 
         .back-link {
@@ -88,21 +92,25 @@
         <table class="table table-hover">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Product</th>
-                    <th>Quantity</th>
-                    <th>Total</th>
+                    <th>Sales ID</th>
+                    <th>Products</th>
+                    <th>Total Qty</th>
+                    <th>Total ₹</th>
                     <th>Date</th>
                 </tr>
             </thead>
             <tbody>
                 {% for s in sales %}
                 <tr>
-                    <td>{{ s.id }}</td>
-                    <td>{{ s.product_name }}</td>
-                    <td>{{ s.quantity }}</td>
-                    <td>₹{{ s.total_amount }}</td>
-                    <td>{{ s.date }}</td>
+                    <td>{{ s[0] }}</td>
+                    <td>
+                        {% for product in s[1].split(', ') %}
+                            <span class="product-badge">{{ product }}</span>
+                        {% endfor %}
+                    </td>
+                    <td>{{ s[2] }}</td>
+                    <td><strong>₹{{ s[3] }}</strong></td>
+                    <td>{{ s[4] }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -111,7 +119,115 @@
         <p class="no-sales">🚫 No sales found.</p>
     {% endif %}
 
+    <h2>📦 Product-wise Sales Summary </h2>
+
+    {% if product_sales %}
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Total Quantity Sold</th>
+                    <th>Total Revenue (₹)</th>
+                    <th>Sold On</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in product_sales %}
+                <tr>
+                    <td>{{ p[0] }}</td>
+                    <td>{{ p[1] }}</td>
+                    <td><strong>₹{{ p[2] }}</strong></td>
+                    <td>{{ p[3] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="no-sales">🚫 No product sales data found.</p>
+    {% endif %}
+
     <a href="{{ url_for('manager_dashboard') }}" class="back-link">⬅ Back to Dashboard</a>
+
+    <h2>📊 Product Sales Insights</h2>
+
+<div style="width: 100%; max-width: 1000px; margin: auto;">
+    <canvas id="quantityChart"></canvas>
+</div>
+
+<div style="width: 100%; max-width: 1000px; height: 400px; margin: 40px auto;">
+    <canvas id="revenueChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const productNames = {{ product_sales | map(attribute=0) | list | tojson }};
+    const productQuantities = {{ product_sales | map(attribute=1) | list | tojson }};
+    const productRevenues = {{ product_sales | map(attribute=2) | list | tojson }};
+
+    // 🥧 Pie Chart for Quantity Sold
+    const quantityCtx = document.getElementById('quantityChart').getContext('2d');
+    new Chart(quantityCtx, {
+        type: 'pie',
+        data: {
+            labels: productNames,
+            datasets: [{
+                label: 'Quantity Sold',
+                data: productQuantities,
+                backgroundColor: [
+                    '#BA68C8', '#81C784', '#FFD54F', '#4FC3F7', '#E57373',
+                    '#A1887F', '#FF8A65', '#9575CD', '#4DB6AC', '#F06292'
+                ],
+                borderColor: '#fff',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: { color: '#333' }
+                }
+            }
+        }
+    });
+
+    // 📊 Bar Chart for Revenue
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revenueCtx, {
+        type: 'bar',
+        data: {
+            labels: productNames,
+            datasets: [{
+                label: 'Total Revenue (₹)',
+                data: productRevenues,
+                backgroundColor: [
+                    '#FF8A65', '#9575CD', '#4DB6AC', '#F06292', '#AED581',
+                    '#64B5F6', '#FFB74D', '#7986CB', '#E57373', '#BA68C8'
+                ],
+                borderColor: '#fff',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#333' }
+                },
+                x: {
+                    ticks: { color: '#333' }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: { color: '#333' }
+                }
+            }
+        }
+    });
+</script>
 
 </body>
 </html>
