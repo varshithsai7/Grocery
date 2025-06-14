@@ -24,6 +24,12 @@
             100% { background-position: 0% 50%; }
         }
 
+        .container {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+        }
+
         .form-container {
             background-color: rgba(255, 255, 255, 0.95);
             padding: 40px;
@@ -31,6 +37,28 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             width: 90%;
             max-width: 600px;
+        }
+
+        .product-list {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            width: 250px;
+        }
+
+        .product-item {
+            padding: 10px;
+            margin: 6px 0;
+            border-bottom: 1px solid #ccc;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .product-item:hover {
+            background: #e0f7fa;
         }
 
         h2 {
@@ -57,12 +85,6 @@
             transition: border 0.3s ease;
         }
 
-        input[type="text"]:focus,
-        input[type="number"]:focus {
-            border-color: #7e57c2;
-            outline: none;
-        }
-
         .item-row {
             display: flex;
             gap: 10px;
@@ -81,10 +103,6 @@
             transition: background-color 0.3s ease;
         }
 
-        button:hover {
-            background-color: #5e35b1;
-        }
-
         input[type="submit"] {
             width: 100%;
             background: #03a9f4;
@@ -99,10 +117,6 @@
             transition: background 0.3s ease;
         }
 
-        input[type="submit"]:hover {
-            background: #0288d1;
-        }
-
         a {
             display: block;
             margin-top: 25px;
@@ -112,11 +126,42 @@
             font-weight: bold;
             transition: color 0.3s ease;
         }
-
-        a:hover {
-            color: #222;
-        }
     </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h2>🧾 Generate Customer Bill</h2>
+            <form method="POST">
+                <label>Customer Name:</label>
+                <input type="text" name="name" required>
+
+                <label>Phone Number:</label>
+                <input type="text" name="phone" required>
+
+                <div id="items">
+                    <div class="item-row">
+                        <input type="number" name="product_id[]" placeholder="Product ID" required>
+                        <input type="number" name="quantity[]" placeholder="Quantity" required>
+                    </div>
+                </div>
+
+                <button type="button" onclick="addItem()">➕ Add Another Item</button>
+                <input type="submit" value="Generate Bill">
+            </form>
+            <a href="/cashier">🔙 Back to Dashboard</a>
+        </div>
+
+        <div class="product-list">
+            <h3>Available Products</h3>
+            {% for p in products %}
+            <div class="product-item" onclick="fillProduct({{ p[0] }})">
+                <strong>{{ p[0] }}</strong> — {{ p[1] }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
     <script>
         function addItem() {
             const itemRow = document.createElement('div');
@@ -127,30 +172,16 @@
             `;
             document.getElementById('items').appendChild(itemRow);
         }
+
+        function fillProduct(productId) {
+            const idInputs = document.getElementsByName('product_id[]');
+            for (let i = idInputs.length - 1; i >= 0; i--) {
+                if (idInputs[i].value === '') {
+                    idInputs[i].value = productId;
+                    break;
+                }
+            }
+        }
     </script>
-</head>
-<body>
-    <div class="form-container">
-        <h2>🧾 Generate Customer Bill</h2>
-        <form method="POST">
-            <label>Customer Name:</label>
-            <input type="text" name="name" required>
-
-            <label>Phone Number:</label>
-            <input type="text" name="phone" required>
-
-            <div id="items">
-                <div class="item-row">
-                    <input type="number" name="product_id[]" placeholder="Product ID" required>
-                    <input type="number" name="quantity[]" placeholder="Quantity" required>
-                </div>
-            </div>
-
-            <button type="button" onclick="addItem()">➕ Add Another Item</button>
-
-            <input type="submit" value="Generate Bill">
-        </form>
-        <a href="/cashier">🔙 Back to Dashboard</a>
-    </div>
 </body>
 </html>

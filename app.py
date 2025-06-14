@@ -786,6 +786,12 @@ def cashier_view_products():
 
 @app.route('/cashier/generate_bill', methods=['GET', 'POST'])
 def cashier_generate_bill():
+    conn = sqlite3.connect("grocery.db")
+    cursor = conn.cursor()
+
+    # Fetch product id and name for the right panel
+    cursor.execute("SELECT id, name FROM products")
+    product_list = cursor.fetchall()
     if request.method == 'POST':
         name = request.form['name']
         phone = request.form['phone']
@@ -855,7 +861,7 @@ def cashier_generate_bill():
 
         return render_template('cashier_bill_summary.html', cart=cart, subtotal=subtotal, discount=discount if is_loyal else 0, final_amount=final_amount, time=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
-    return render_template('cashier_generate_bill.html')
+    return render_template('cashier_generate_bill.html', products=product_list)
 
 
 

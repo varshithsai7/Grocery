@@ -44,7 +44,6 @@
             text-align: center;
             font-size: 1rem;
             position: relative;
-            z-index: 0;
         }
 
         tr:nth-child(even) {
@@ -57,23 +56,18 @@
 
         .product-row {
             position: relative;
-            z-index: 1;
         }
 
-        /* Floating Image Styling */
         .hover-img {
             display: none;
             position: absolute;
-            top: -30px;
-            left: 500px;
-            transform: translateX(-50%);
             width: 160px;
             height: 160px;
             background-color: white;
             border-radius: 12px;
-            box-shadow: 0 8px 16px rgba(156, 39, 176, 0.5);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
             padding: 5px;
-            z-index: 1000;
+            z-index: 9999;
         }
 
         .hover-img img {
@@ -81,17 +75,7 @@
             height: 100%;
             object-fit: cover;
             border-radius: 10px;
-            border: 4px solid #9c27b0;
-            background-color: white;
-            transition: transform 0.3s ease;
-        }
-
-        .product-row:hover .hover-img {
-            display: block;
-        }
-
-        .product-row:hover .hover-img img {
-            transform: scale(1.03);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
         }
 
         a {
@@ -115,7 +99,6 @@
             .hover-img {
                 width: 140px;
                 height: 140px;
-                top: -170px;
             }
 
             th, td {
@@ -159,5 +142,32 @@
         </table>
     </div>
     <a href="/cashier">🔙 Back to Dashboard</a>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const rows = document.querySelectorAll(".product-row");
+
+            rows.forEach((row, index) => {
+                const hoverImg = row.querySelector(".hover-img");
+                const td = row.children[0];
+
+                row.addEventListener("mouseenter", () => {
+                    const tdRect = td.getBoundingClientRect();
+                    const rowHeight = row.offsetHeight;
+
+                    // Show image below for first 5 rows, above for the rest
+                    const topOffset = index < 5 ? rowHeight + 5 : -165;
+
+                    hoverImg.style.display = "block";
+                    hoverImg.style.top = topOffset + "px";
+                    hoverImg.style.left = "280%";
+                });
+
+                row.addEventListener("mouseleave", () => {
+                    hoverImg.style.display = "none";
+                });
+            });
+        });
+    </script>
 </body>
 </html>

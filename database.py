@@ -14,6 +14,11 @@ def connect():
         )
     """)
 
+    # Create table: barcode
+    cursor.execute("""
+        )
+    """)
+
     # Create table: products (updated for homepage display)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS products(
