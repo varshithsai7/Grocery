@@ -75,18 +75,22 @@
         }
 
         .back-link {
-            display: block;
+            display: inline-block;
             text-align: center;
             margin-top: 40px;
             font-weight: bold;
             text-decoration: none;
             color: #884EA0;
-            transition: color 0.3s ease;
+            border: 2px solid #884EA0;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
         }
 
         .back-link:hover {
-            color: #5e3370;
-            text-decoration: underline;
+            background-color: #884EA0;
+            color: white;
+            text-decoration: none;
         }
 
         .highlight-action {
@@ -109,6 +113,7 @@
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>user</th>
                     <th>Action</th>
                     <th>Details</th>
                     <th>Timestamp</th>
@@ -118,6 +123,7 @@
                 {% for log in logs %}
                 <tr>
                     <td>{{ log[0] }}</td>
+                    <td>{{log[4]}}</td>
                     <td class="highlight-action">{{ log[1] }}</td>
                     <td>{{ log[2] }}</td>
                     <td>{{ log[3] }}</td>
@@ -130,7 +136,9 @@
         <p class="no-logs">🛡️ No heroic actions recorded yet.</p>
     {% endif %}
 
-    <a href="{{ url_for('manager_dashboard') }}" class="back-link">⬅ Back to Dashboard</a>
+    <div class="text-center">
+        <a href="{{ url_for('manager_dashboard') }}" class="back-link">⬅ Back to Dashboard</a>
+    </div>
 
 </body>
 </html>

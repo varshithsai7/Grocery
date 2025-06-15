@@ -46,6 +46,24 @@ def save_last_action(product_id, action_type):
             )
 
 
+# helper function for admin log action
+# Audit Log Helper
+def log_action(conn, action):
+    if 'username' in session and 'role' in session:
+        user = session['username']
+        role = session['role']
+    else:
+        user = 'Unknown'
+        role = 'Unknown'
+
+    conn.execute(
+        "INSERT INTO audit_log (action, user, role) VALUES (?, ?, ?)",
+        (action, user, role)
+    )
+
+
+
+
 # Helper function to get all products from the database
 def get_all_products():
     conn = sqlite3.connect('grocery.db')  # Assuming your DB is named grocery.db
@@ -108,6 +126,115 @@ def login():
             flash('❌ Invalid username or password')
             return redirect(url_for("login"))
     return render_template('home.html')
+
+
+
+# admin user add delete 
+# 👥 Admin View All Users
+@app.route('/admin/users')
+def view_users():
+    if 'role' in session and session['role'] == 'admin':
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, username, role FROM users")
+            users = cursor.fetchall()
+        return render_template('admin_users.html', users=users)
+    return redirect('/login')
+
+
+# ➕ Admin Add User
+@app.route('/admin/add-user', methods=['GET', 'POST'])
+def add_user():
+    if 'role' in session and session['role'] == 'admin':
+        if request.method == 'POST':
+            username = request.form['username']
+            password = request.form['password']
+            role = request.form['role']
+
+            try:
+                with get_db_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                                   (username, password, role))
+                    conn.commit()
+
+                    # 🌿 Log the action using the same connection
+                    log_action(conn, f"Added user '{username}' with role '{role}'")
+                    
+                flash('✅ User added successfully!', 'success')
+                return redirect('/admin/users')
+
+            except sqlite3.IntegrityError:
+                flash('❌ Username already exists.', 'danger')
+                
+        return render_template('admin_add_user.html')
+    return redirect('/login')
+
+
+
+# ✏️ Admin Edit User
+@app.route('/admin/edit-user/<int:user_id>', methods=['GET', 'POST'])
+def edit_user(user_id):
+    if 'role' in session and session['role'] == 'admin':
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            if request.method == 'POST':
+                new_role = request.form['role']
+                new_password = request.form['password']
+
+                cursor.execute("UPDATE users SET password=?, role=? WHERE id=?",
+                               (new_password, new_role, user_id))
+                
+                # 🔒 Commit first to save user update
+                conn.commit()
+
+                # 📜 Log using same connection
+                log_action(conn, f"Updated user ID {user_id} to role '{new_role}' with password '{new_password}'")
+                
+                flash('✅ User updated successfully!', 'success')
+                return redirect('/admin/users')
+
+            cursor.execute("SELECT id, username, role FROM users WHERE id=?", (user_id,))
+            user = cursor.fetchone()
+        return render_template('admin_edit_user.html', user=user)
+    return redirect('/login')
+
+
+
+# 🗑️ Admin Delete User
+@app.route('/admin/delete-user/<int:user_id>', methods=['POST'])
+def delete_user(user_id):
+    if 'role' in session and session['role'] == 'admin':
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT username FROM users WHERE id=?", (user_id,))
+            user = cursor.fetchone()
+
+            if user:
+                username = user[0]
+                cursor.execute("DELETE FROM users WHERE id=?", (user_id,))
+                
+                # 🌼 Log using same connection
+                log_action(conn, f"Deleted user '{username}'")
+
+                conn.commit()
+
+                flash(f'🗑️ User "{username}" deleted successfully!', 'success')
+        return redirect('/admin/users')
+    return redirect('/login')
+
+# admin to get audit details
+@app.route('/admin/audit-log')
+def audit_log():
+    if 'role' in session and session['role'] == 'admin':
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, action, user, role, timestamp FROM audit_log ORDER BY timestamp DESC")
+            logs = cursor.fetchall()
+        return render_template('admin_audit_log.html', logs=logs)
+    return redirect('/login')
+
 
 
 
@@ -309,152 +436,140 @@ def view_sales_report():
 @app.route('/manager/products')
 def manager_view_products():
     if 'role' in session and session['role'] == 'manager':
-        conn = sqlite3.connect("grocery.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, name, price, stock, expiry_date, unit,image_url FROM products")
-        products = cursor.fetchall()
-        conn.close()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, name, price, stock, expiry_date, unit, image_url 
+                FROM products
+                ORDER BY name ASC
+            """)
+            products = cursor.fetchall()
+
         return render_template("manager_products.html", products=products)
+
     return redirect('/login')
+
 
 @app.route('/manager/low-stock')
 def manager_low_stock():
     if 'role' in session and session['role'] == 'manager':
-        conn = sqlite3.connect("grocery.db")
-        cursor = conn.cursor()
-        threshold = 3  # you can later make this adjustable if needed
-        cursor.execute("SELECT id, name, stock, unit FROM products WHERE stock <= ?", (threshold,))
-        low_stock_products = cursor.fetchall()
-        conn.close()
-        return render_template("manager_low_stock.html", products=low_stock_products, threshold=threshold)
-    return redirect('/login')
+        try:
+            threshold = int(request.args.get('limit', 3))  # default is 3 if not specified
+        except ValueError:
+            threshold = 3  # fallback if someone passes a non-integer
 
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, name, stock, unit FROM products WHERE stock <= ?", (threshold,))
+            low_stock_products = cursor.fetchall()
+
+        return render_template("manager_low_stock.html", products=low_stock_products, threshold=threshold)
+
+    return redirect('/login')
 
 @app.route('/manager/expired-products')
 def manager_expired_products():
     if 'role' in session and session['role'] == 'manager':
         today = datetime.date.today().isoformat()
-        conn = sqlite3.connect("grocery.db")
-        cursor = conn.cursor()
 
-        # Fetch expired products
-        cursor.execute("SELECT id, name, expiry_date FROM products WHERE expiry_date IS NOT NULL AND expiry_date < ?", (today,))
-        expired = cursor.fetchall()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
 
-        # Delete them
-        for prod in expired:
-            cursor.execute("DELETE FROM products WHERE id = ?", (prod[0],))
-        conn.commit()
-        conn.close()
+            # Step 1: Fetch expired products
+            cursor.execute("""
+                SELECT id, name, expiry_date 
+                FROM products 
+                WHERE expiry_date IS NOT NULL AND expiry_date < ?
+            """, (today,))
+            expired = cursor.fetchall()
 
+            # Step 2: Delete and log
+            for prod in expired:
+                cursor.execute("DELETE FROM products WHERE id = ?", (prod[0],))
+                log_manager_action("Deleted Expired Product", f"ID: {prod[0]}, Name: {prod[1]}, Expired: {prod[2]}", conn)
+
+        flash(f"🗑️ {len(expired)} expired products deleted successfully!", "success")
         return render_template("manager_expired_products.html", expired_products=expired)
+
     return redirect('/login')
 
-
-# undo
-# @app.route('/manager/undo', methods=['POST'])
-# def manager_undo():
-#     conn = sqlite3.connect("grocery.db")
-#     cursor = conn.cursor()
-
-#     # Fetch the last action from the undo log
-#     cursor.execute("SELECT * FROM last_action ORDER BY id DESC LIMIT 1")
-#     last = cursor.fetchone()
-
-#     if last:
-#         product_id, action = last[1], last[2]
-
-#         if action == 'delete':
-#             # Re-insert the deleted product
-#             cursor.execute("""
-#                 INSERT INTO products (id, name, price, stock, unit, expiry_date)
-#                 VALUES (?, ?, ?, ?, ?, ?)""",
-#                 (product_id, last[3], last[4], last[5], last[6], last[7])
-#             )
-#         else:
-#             # Restore product to its previous state
-#             cursor.execute("""
-#                 UPDATE products
-#                 SET name = ?, price = ?, stock = ?, unit = ?, expiry_date = ?
-#                 WHERE id = ?""",
-#                 (last[3], last[4], last[5], last[6], last[7], product_id)
-#             )
-
-#         # Delete the undo record after applying it
-#         cursor.execute("DELETE FROM last_action WHERE id = ?", (last[0],))
-#         conn.commit()
-
-#     conn.close()
-#     return redirect(url_for('manager_update_interface'))
 
 
 @app.route('/manager/undo', methods=['POST'])
 def manager_undo():
-    conn = sqlite3.connect("grocery.db", timeout=10)
-    conn.execute("PRAGMA journal_mode=WAL;")
-    cursor = conn.cursor()
+    if 'role' in session and session['role'] != 'manager':
+        return redirect('/login')
 
-    # Fetch the last action from undo log
-    cursor.execute("""
-    SELECT id, product_id, action, prev_name, prev_price, prev_stock, prev_unit, prev_expiry
-    FROM last_action
-    ORDER BY id DESC LIMIT 1
-    """)
-    last = cursor.fetchone()
+    with get_db_connection() as conn:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        cursor = conn.cursor()
 
-    if last:
+        cursor.execute("""
+            SELECT id, product_id, action, prev_name, prev_price, prev_stock, prev_unit, prev_expiry
+            FROM last_action
+            ORDER BY id DESC LIMIT 1
+        """)
+        last = cursor.fetchone()
+
+        if not last:
+            flash("⚠️ No action to undo.", "warning")
+            return redirect(url_for('manager_update_interface'))
+
         action_id, product_id, action, name, price, stock, unit, expiry = last
 
-        if action == 'delete':
-            # Restore deleted product
-            cursor.execute("""
-                INSERT INTO products (id, name, price, stock, unit, expiry_date)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (product_id, name, price, stock, unit, expiry))
+        try:
+            if action == 'delete':
+                cursor.execute("""
+                    INSERT INTO products (id, name, price, stock, unit, expiry_date)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (product_id, name, price, stock, unit, expiry))
+                log_manager_action("Undo Delete", f"Restored product '{name}' (ID: {product_id})", conn)
 
-        elif action == 'update':
-            # Revert product to previous state
-            cursor.execute("""
-                UPDATE products SET name=?, price=?, stock=?, unit=?, expiry_date=?
-                WHERE id=?
-            """, (name, price, stock, unit, expiry, product_id))
+            elif action == 'update':
+                cursor.execute("""
+                    UPDATE products SET name=?, price=?, stock=?, unit=?, expiry_date=?
+                    WHERE id=?
+                """, (name, price, stock, unit, expiry, product_id))
+                log_manager_action("Undo Update", f"Reverted product '{name}' (ID: {product_id})", conn)
 
-        elif action == 'increment':
-            # Reverse increment → decrement
-            cursor.execute("UPDATE products SET stock = stock - 1 WHERE id = ?", (product_id,))
+            elif action == 'increment':
+                cursor.execute("UPDATE products SET stock = stock - 1 WHERE id = ?", (product_id,))
+                log_manager_action("Undo Increment", f"Decreased stock of product ID {product_id}", conn)
 
-        elif action == 'decrement':
-            # Reverse decrement → increment
-            cursor.execute("UPDATE products SET stock = stock + 1 WHERE id = ?", (product_id,))
+            elif action == 'decrement':
+                cursor.execute("UPDATE products SET stock = stock + 1 WHERE id = ?", (product_id,))
+                log_manager_action("Undo Decrement", f"Increased stock of product ID {product_id}", conn)
 
-        # Delete this action from undo log
-        cursor.execute("DELETE FROM last_action WHERE id = ?", (action_id,))
-        conn.commit()
+            # Delete this action from the undo log
+            cursor.execute("DELETE FROM last_action WHERE id = ?", (action_id,))
+            conn.commit()
+            flash("🧙 Undo successful. Product list updated!", "success")
 
-    conn.close()
-    flash("🧙 Undo successful. Your product list has been restored!", "success")
+        except Exception as e:
+            flash(f"❌ Undo failed: {str(e)}", "danger")
+
     return redirect(url_for('manager_update_interface'))
-
 
 
 @app.route('/manager/restock', methods=['GET', 'POST'])
 def manager_restock():
     if 'role' in session and session['role'] == 'manager':
-        conn = sqlite3.connect("grocery.db")
-        cursor = conn.cursor()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
 
-        if request.method == 'POST':
-            product_id = request.form['product_id']
-            quantity = int(request.form['quantity'])
+            if request.method == 'POST':
+                product_id = request.form['product_id']
+                quantity = int(request.form['quantity'])
 
-            cursor.execute("UPDATE products SET stock = stock + ? WHERE id = ?", (quantity, product_id))
-            conn.commit()
-            conn.close()
-            return redirect('/manager/restock')
+                cursor.execute("UPDATE products SET stock = stock + ? WHERE id = ?", (quantity, product_id))
+                log_manager_action("Restocked Product", f"Product ID {product_id}, Quantity Added: {quantity}", conn)
 
-        cursor.execute("SELECT id, name, stock, unit FROM products")
-        products = cursor.fetchall()
-        conn.close()
+                flash("✅ Stock updated successfully!", "success")
+                return redirect('/manager/restock')
+
+            cursor.execute("SELECT id, name, stock, unit FROM products")
+            products = cursor.fetchall()
+
         return render_template("manager_restock.html", products=products)
 
     return redirect('/login')
@@ -468,26 +583,34 @@ def manager_add_product():
             stock = int(request.form['stock'])
             unit = request.form['unit']
             expiry_date = request.form['expiry_date'] or None
+            image_url = request.form['image_url']
 
-            conn = sqlite3.connect("grocery.db")
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO products (name, price, stock, unit, expiry_date)
-                VALUES (?, ?, ?, ?, ?)
-            """, (name, price, stock, unit, expiry_date))
-            product_id = cursor.lastrowid
-            cursor.execute("""
-                INSERT INTO last_action (product_id, action, prev_name, prev_price, prev_stock, prev_unit, prev_expiry)
-                VALUES (?, 'delete', ?, ?, ?, ?, ?)
-            """, (product_id, name, price, stock, unit, expiry_date))
 
-            conn.commit()
-            conn.close()
-            return redirect('/manager/add_product')
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO products (name, price, stock, unit, expiry_date, image_url)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (name, price, stock, unit, expiry_date, image_url))
+
+                product_id = cursor.lastrowid
+
+                # Backup for undo
+                cursor.execute("""
+                    INSERT INTO last_action (product_id, action, prev_name, prev_price, prev_stock, prev_unit, prev_expiry)
+                    VALUES (?, 'delete', ?, ?, ?, ?, ?)
+                """, (product_id, name, price, stock, unit, expiry_date))
+
+                # Log the addition
+                log_manager_action("Added Product", f"Name: {name}, Price: ₹{price}, Stock: {stock}", conn)
+
+                flash("✅ Product added successfully!", "success")
+                return redirect('/manager/add_product')
 
         return render_template("manager_add_product.html")
 
     return redirect('/login')
+
 
 # update action for incrementing decrement in updation interface or modifications
 @app.route('/manager/update_action', methods=['POST'])
@@ -618,53 +741,48 @@ def manager_update_product_fields():
 
 
 # modify interfave
-
 @app.route('/manager/update-interface', methods=['GET', 'POST'])
 def manager_update_interface():
-    conn = sqlite3.connect("grocery.db")
-    cursor = conn.cursor()
-    
-    if request.method == 'POST':
-        action = request.form['action']
-        product_id = int(request.form.get('product_id'))
+    if 'role' in session and session['role'] == 'manager':
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
 
-        if action == 'increment' or action == 'decrement':
-            cursor.execute("SELECT * FROM products WHERE id = ?", (product_id,))
-            original = cursor.fetchone()
-            
-            # 🌟 BACKUP before update
-            cursor.execute("""
-                INSERT INTO last_action (product_id, action, name, price, stock, unit, expiry_date, description, image_url, category)
-                VALUES (?, 'update', ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (product_id, original[1], original[2], original[3], original[4], original[5], original[6], original[7], original[8], original[9]))
+            if request.method == 'POST':
+                action = request.form['action']
+                product_id = int(request.form.get('product_id'))
 
-            if action == 'increment':
-                cursor.execute("UPDATE products SET stock = stock + 1 WHERE id = ?", (product_id,))
-            else:
-                cursor.execute("UPDATE products SET stock = stock - 1 WHERE id = ?", (product_id,))
+                cursor.execute("SELECT * FROM products WHERE id = ?", (product_id,))
+                original = cursor.fetchone()
 
-        elif action == 'delete':
-            cursor.execute("SELECT * FROM products WHERE id = ?", (product_id,))
-            original = cursor.fetchone()
+                if original:
+                    # 🌟 Backup before any update/delete
+                    cursor.execute("""
+                        INSERT INTO last_action (product_id, action, name, price, stock, unit, expiry_date, description, image_url, category)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        product_id, action, original[1], original[2], original[3], original[4],
+                        original[5], original[6], original[7], original[8]
+                    ))
 
-            # 🌟 BACKUP before deletion
-            cursor.execute("""
-                INSERT INTO last_action (product_id, action, name, price, stock, unit, expiry_date, description, image_url, category)
-                VALUES (?, 'delete', ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (product_id, original[1], original[2], original[3], original[4], original[5], original[6], original[7], original[8], original[9]))
+                    if action == 'increment':
+                        cursor.execute("UPDATE products SET stock = stock + 1 WHERE id = ?", (product_id,))
+                        log_manager_action("Incremented Stock", f"Product ID {product_id}", conn)
+                    elif action == 'decrement':
+                        cursor.execute("UPDATE products SET stock = stock - 1 WHERE id = ?", (product_id,))
+                        log_manager_action("Decremented Stock", f"Product ID {product_id}", conn)
+                    elif action == 'delete':
+                        cursor.execute("DELETE FROM products WHERE id = ?", (product_id,))
+                        log_manager_action("Deleted Product", f"Product ID {product_id}", conn)
 
-            cursor.execute("DELETE FROM products WHERE id = ?", (product_id,))
+                flash("🔄 Update performed. Undo available!", "info")
+                return redirect('/manager/update-interface')
 
-        conn.commit()
-        conn.close()
-        flash("🔄 Update performed. Undo available!", "info")
-        return redirect('/manager/update-interface')
+            # GET: Show products
+            cursor.execute("SELECT id, name, price, stock, unit, expiry_date, image_url FROM products")
+            products = cursor.fetchall()
+            return render_template('manager_update_interface.html', products=products)
 
-    # GET Method: Display products
-    cursor.execute("SELECT id, name, price, stock, unit, expiry_date,image_url FROM products")
-    products = cursor.fetchall()
-    conn.close()
-    return render_template('manager_update_interface.html', products=products)
+    return redirect('/login')
 
 
 
@@ -678,60 +796,68 @@ def manager_search_products():
 
         if request.method == 'POST':
             query = request.form['query'].strip()
-            conn = sqlite3.connect("grocery.db")
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
+            with get_db_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
 
-            if query.isdigit():
-                cursor.execute("SELECT * FROM products WHERE id = ?", (int(query),))
-            else:
-                cursor.execute("SELECT * FROM products WHERE LOWER(name) LIKE ?", ('%' + query.lower() + '%',))
+                if query.isdigit():
+                    cursor.execute("SELECT * FROM products WHERE id = ?", (int(query),))
+                else:
+                    cursor.execute("SELECT * FROM products WHERE LOWER(name) LIKE ?", ('%' + query.lower() + '%',))
 
-            products = cursor.fetchall()
-            conn.close()
+                products = cursor.fetchall()
+
+                # 🖋️ Log search action
+                log_manager_action("Searched Products", f"Search Query: '{query}'", conn)
 
         return render_template("manager_search_products.html", products=products, query=query)
     return redirect('/login')
+
 
 
 # ------------------- View Sales Report -------------------
 @app.route('/manager/sales_report')
 def manager_sales_report():
     if 'role' in session and session['role'] == 'manager':
-        conn = sqlite3.connect("grocery.db")
-        cursor = conn.cursor()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT 
-                s.id AS sale_id, 
-                GROUP_CONCAT(si.product_name, ', ') AS product_names, 
-                SUM(si.quantity) AS total_quantity, 
-                s.total_amount, 
-                s.sale_date 
-            FROM sales s 
-            JOIN sales_items si ON s.id = si.sale_id 
-            GROUP BY s.id 
-            ORDER BY s.sale_date DESC
-        """)
-        
-        sales = cursor.fetchall()
-        # Additional query for product-wise sales
-        cursor.execute("""
-            SELECT 
-                si.product_name, 
-                SUM(si.quantity) AS total_quantity_sold, 
-                SUM(si.quantity * si.price_per_unit) AS total_sales_amount,
-                s.sale_date
-            FROM sales_items si
-            JOIN sales s ON si.sale_id = s.id
-            GROUP BY si.product_name, s.sale_date
-            ORDER BY s.sale_date DESC
-        """)
-        product_sales = cursor.fetchall()
-        conn.close()
-        return render_template("manager_sales_report.html", sales=sales,product_sales=product_sales)
-    
+            # 🧾 Overall Sales
+            cursor.execute("""
+                SELECT 
+                    s.id AS sale_id, 
+                    GROUP_CONCAT(si.product_name, ', ') AS product_names, 
+                    SUM(si.quantity) AS total_quantity, 
+                    s.total_amount, 
+                    s.sale_date 
+                FROM sales s 
+                JOIN sales_items si ON s.id = si.sale_id 
+                GROUP BY s.id 
+                ORDER BY s.sale_date DESC
+            """)
+            sales = cursor.fetchall()
+
+            # 📦 Product-wise Sales
+            cursor.execute("""
+                SELECT 
+                    si.product_name, 
+                    SUM(si.quantity) AS total_quantity_sold, 
+                    SUM(si.quantity * si.price_per_unit) AS total_sales_amount,
+                    s.sale_date
+                FROM sales_items si
+                JOIN sales s ON si.sale_id = s.id
+                GROUP BY si.product_name, s.sale_date
+                ORDER BY s.sale_date DESC
+            """)
+            product_sales = cursor.fetchall()
+
+            # ✍️ Logging the action
+            log_manager_action("Viewed Sales Report", "Checked overall and product-wise sales", conn)
+
+        return render_template("manager_sales_report.html", sales=sales, product_sales=product_sales)
+
     return redirect('/login')
+
 
 
 
@@ -739,13 +865,22 @@ def manager_sales_report():
 @app.route('/manager/loyal_customers')
 def manager_loyal_customers():
     if 'role' in session and session['role'] == 'manager':
-        conn = sqlite3.connect("grocery.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT name, phone, total_spent FROM customers WHERE total_spent >= 1000 ORDER BY total_spent DESC")
-        customers = cursor.fetchall()
-        conn.close()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT name, phone, total_spent 
+                FROM customers 
+                WHERE total_spent >= 1000 
+                ORDER BY total_spent DESC
+            """)
+            customers = cursor.fetchall()
+
+            # 🌸 Log within same connection
+            log_manager_action("Viewed Loyal Customers", "Viewed list of customers with total_spent >= ₹1000", conn)
+
         return render_template("manager_loyal_customers.html", customers=customers)
     return redirect('/login')
+
 
 
 # ------------------- Backup Database -------------------
@@ -757,6 +892,7 @@ def manager_backup():
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = f"backup/grocery_backup_{timestamp}.db"
         shutil.copy2("grocery.db", backup_path)
+        log_manager_action("Database Backup", f"Backup saved at {backup_path}")
         return f"✅ Backup created at: {backup_path}"
     return redirect('/login')
 
@@ -765,13 +901,36 @@ def manager_backup():
 @app.route('/manager/audit_log')
 def manager_audit_log():
     if 'role' in session and session['role'] == 'manager':
-        conn = sqlite3.connect("grocery.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM manager_audit ORDER BY timestamp DESC")
-        logs = cursor.fetchall()
-        conn.close()
-        return render_template("manager_audit_log.html", logs=logs)
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM manager_audit ORDER BY timestamp DESC")
+                logs = cursor.fetchall()
+            return render_template("manager_audit_log.html", logs=logs)
+        except Exception as e:
+            print("Error fetching manager audit logs:", e)
+            flash("⚠️ Could not load audit logs at the moment.", "danger")
+            return redirect('/manager')
     return redirect('/login')
+
+# managerlogactions
+def log_manager_action(action, details="", conn=None):
+    if 'username' in session:
+        user = session['username']
+    else:
+        user = 'Unknown'
+
+    if conn:
+        conn.execute(
+            "INSERT INTO manager_audit (action, details, user) VALUES (?, ?, ?)",
+            (action, details, user)
+        )
+    else:
+        with get_db_connection() as inner_conn:
+            inner_conn.execute(
+                "INSERT INTO manager_audit (action, details, user) VALUES (?, ?, ?)",
+                (action, details, user)
+            )
 
 
 # cashier
@@ -868,5 +1027,5 @@ def cashier_generate_bill():
 
 # Keep this always 💖
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True,threaded=False)
 

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Users</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(to right, #fdf0f0, #f0f8ff);
+      font-family: 'Segoe UI', sans-serif;
+      padding: 40px 20px;
+    }
+
+    .container {
+      background-color: #ffffff;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      border: 4px solid;
+      border-image: linear-gradient(to right, #ff758c, #ff7eb3, #42a5f5) 1;
+      animation: fadeIn 1s ease;
+    }
+
+    h2 {
+      text-align: center;
+      font-weight: bold;
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+      background: linear-gradient(to right, #d63384, #4a00e0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .btn-add {
+      display: inline-block;
+      margin-bottom: 20px;
+      background: linear-gradient(to right, #89f7fe, #66a6ff);
+      color: white;
+      font-weight: 600;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      text-decoration: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 18px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f8f9fa;
+      font-weight: 700;
+      border-bottom: 2px solid #dee2e6;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    tr:hover {
+      background-color: #e6f0ff;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn-edit {
+      background: linear-gradient(to right, #fbc2eb, #a6c1ee);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-right: 5px;
+    }
+
+    .btn-delete {
+      background: linear-gradient(to right, #ff6a6a, #ff8a8a);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .btn-back {
+      display: inline-block;
+      margin-top: 10px;
+      background: linear-gradient(to right, #ffecd2, #fcb69f);
+      color: #333;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-back:hover {
+      background: linear-gradient(to right, #f9d29d, #ffd8cb);
+      color: black;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>👥 All Users</h2>
+    <a href="/admin/add-user" class="btn-add">➕ Add New User</a>
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td>{{ user[0] }}</td>
+            <td>{{ user[1] }}</td>
+            <td>{{ user[2] }}</td>
+            <td>
+              <a href="/admin/edit-user/{{ user[0] }}" class="btn btn-edit">✏️ Edit</a>
+              <form method="POST" action="/admin/delete-user/{{ user[0] }}" class="delete-form d-inline" data-username="{{ user[1] }}">
+                <button type="submit" class="btn btn-delete">🗑️ Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 🌟 Go Back Button -->
+    <div class="text-center">
+      <a href="/admin" class="btn-back">🔙 Go to Dashboard</a>
+    </div>
+  </div>
+
+  <!-- SweetAlert2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- SweetAlert2 Delete Confirmation -->
+  <script>
+    document.querySelectorAll('.delete-form').forEach(form => {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const username = form.dataset.username;
+        Swal.fire({
+          title: 'Are you sure?',
+          text: `You are about to delete "${username}". This action cannot be undone.`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, delete it!',
+          reverseButtons: true
+        }).then((result) => {
+          if (result.isConfirmed) {
+            form.submit();
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

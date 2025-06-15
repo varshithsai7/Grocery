@@ -14,10 +14,27 @@ def connect():
         )
     """)
 
-    # Create table: barcode
     cursor.execute("""
+        CREATE TABLE IF NOT EXISTS audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            action TEXT NOT NULL,
+            user TEXT NOT NULL,
+            role TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS manager_audit(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            action TEXT NOT NULL,
+            
+            details TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    
 
     # Create table: products (updated for homepage display)
     cursor.execute("""
