@@ -1,8 +1,13 @@
 from contextlib import contextmanager
 import datetime
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, jsonify, render_template, request, redirect, url_for, session, flash
 import sqlite3
 from auth import validate_user
+from bs4 import BeautifulSoup
+import requests, os, re
+from PIL import Image
+from io import BytesIO
+
 
 
 app = Flask("MyGRow", static_url_path='/static')
@@ -432,6 +437,133 @@ def view_sales_report():
                            product_revenues=product_revenues)
 
 
+# preview images
+@app.route('/manager/fetch_preview_images/<int:product_id>')
+def fetch_preview_images(product_id):
+    headers = {"User-Agent": "Mozilla/5.0"}
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM products WHERE id = ?", (product_id,))
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({"images": []})
+
+        product_name = row[0]
+
+    query = '+'.join(product_name.split())
+    url = f"https://www.google.com/search?q={query}&tbm=isch"
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, 'lxml')
+    images = soup.find_all("img")
+
+    urls = []
+    for img in images:
+        src = img.get("src")
+        if src and src.startswith("http"):
+            urls.append(src)
+        if len(urls) >= 5:
+            break
+
+    return jsonify({"images": urls})
+
+
+## ✅ Route to View All Products for Minute Updates
+@app.route('/manager/update_minute_details_select')
+def update_minute_details_select():
+    if 'role' not in session or session['role'] != 'manager':
+        return redirect('/login')
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name, category FROM products")
+        products = cursor.fetchall()
+
+    return render_template('manager_update_select.html', products=products)
+
+# ✅ Function to Fetch Image Without API from Google Images
+def fetch_image_without_api(product_name, save_path):
+    headers = {"User-Agent": "Mozilla/5.0"}
+    query = '+'.join(product_name.split())
+    url = f"https://www.google.com/search?q={query}&tbm=isch"
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, 'lxml')
+    images = soup.find_all("img")
+    for img in images:
+        src = img.get("src")
+        if src and src.startswith("http"):
+            try:
+                img_data = requests.get(src).content
+                img_file = Image.open(BytesIO(img_data)).convert("RGB")
+                img_file.save(save_path, format="JPEG")
+                return True
+            except:
+                continue
+    return False
+
+# ✅ Route to Update Description, Category, and Image for Individual Product
+@app.route('/manager/update_minute_details/<int:product_id>', methods=['GET', 'POST'])
+def update_minute_details(product_id):
+    if 'role' not in session or session['role'] != 'manager':
+        return redirect('/login')
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM products WHERE id = ?", (product_id,))
+        product = cursor.fetchone()
+
+        if not product:
+            flash("❌ Product not found.", "danger")
+            return redirect('/manager/dashboard')
+
+        safe_name = product[1].lower().replace(' ', '_')
+        local_filename = f"{safe_name}.jpeg"
+        local_path = os.path.join('static', 'images', local_filename)
+        local_url = f"/static/images/{local_filename}"
+
+        if request.method == 'POST':
+            update_fields = request.form.getlist('update_fields')
+            image_mode = request.form.get('image_mode')
+            image_url_input = request.form['image_url'].strip()
+            new_description = request.form['description']
+            new_category = request.form['category']
+
+            try:
+                if 'image' in update_fields:
+                    if image_mode == "fetch_google":
+                        # Now using preview-selected image URL from form
+                        if image_url_input.startswith("http"):
+                            response = requests.get(image_url_input)
+                            img = Image.open(BytesIO(response.content)).convert("RGB")
+                            img.save(local_path, format="JPEG")
+                            image_url_input = local_url
+                        else:
+                            flash("❌ Invalid image URL selected.", "danger")
+                    elif image_mode == "manual_url" and image_url_input.startswith("http"):
+                        response = requests.get(image_url_input)
+                        img = Image.open(BytesIO(response.content)).convert("RGB")
+                        img.save(local_path, format="JPEG")
+                        image_url_input = local_url
+                    else:
+                        image_url_input = product[7]
+
+                    cursor.execute("UPDATE products SET image_url = ? WHERE id = ?", (image_url_input, product_id))
+
+                if 'description' in update_fields:
+                    cursor.execute("UPDATE products SET description = ? WHERE id = ?", (new_description, product_id))
+
+                if 'category' in update_fields:
+                    cursor.execute("UPDATE products SET category = ? WHERE id = ?", (new_category, product_id))
+
+                conn.commit()
+                flash("✅ Selected details updated successfully!", "success")
+                return redirect(f'/manager/update_minute_details/{product_id}')
+
+            except Exception as e:
+                flash(f"❌ Update failed: {e}", "danger")
+
+        return render_template('manager_updateminutedetails.html', product=product)
+
 # manager features
 @app.route('/manager/products')
 def manager_view_products():
@@ -579,29 +711,28 @@ def manager_add_product():
     if 'role' in session and session['role'] == 'manager':
         if request.method == 'POST':
             name = request.form['name']
+            description = request.form['description']
             price = float(request.form['price'])
             stock = int(request.form['stock'])
             unit = request.form['unit']
             expiry_date = request.form['expiry_date'] or None
             image_url = request.form['image_url']
-
+            category = request.form['category']
 
             with get_db_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    INSERT INTO products (name, price, stock, unit, expiry_date, image_url)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (name, price, stock, unit, expiry_date, image_url))
+                    INSERT INTO products (name, description, price, stock, unit, expiry_date, image_url, category)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (name, description, price, stock, unit, expiry_date, image_url, category))
 
                 product_id = cursor.lastrowid
 
-                # Backup for undo
                 cursor.execute("""
                     INSERT INTO last_action (product_id, action, prev_name, prev_price, prev_stock, prev_unit, prev_expiry)
                     VALUES (?, 'delete', ?, ?, ?, ?, ?)
                 """, (product_id, name, price, stock, unit, expiry_date))
 
-                # Log the addition
                 log_manager_action("Added Product", f"Name: {name}, Price: ₹{price}, Stock: {stock}", conn)
 
                 flash("✅ Product added successfully!", "success")
@@ -610,6 +741,7 @@ def manager_add_product():
         return render_template("manager_add_product.html")
 
     return redirect('/login')
+
 
 
 # update action for incrementing decrement in updation interface or modifications
@@ -837,28 +969,23 @@ def manager_sales_report():
             """)
             sales = cursor.fetchall()
 
-            # 📦 Product-wise Sales
+            # 📦 Aggregated Product-wise Sales
             cursor.execute("""
                 SELECT 
                     si.product_name, 
                     SUM(si.quantity) AS total_quantity_sold, 
-                    SUM(si.quantity * si.price_per_unit) AS total_sales_amount,
-                    s.sale_date
+                    SUM(si.quantity * si.price_per_unit) AS total_sales_amount
                 FROM sales_items si
-                JOIN sales s ON si.sale_id = s.id
-                GROUP BY si.product_name, s.sale_date
-                ORDER BY s.sale_date DESC
+                GROUP BY si.product_name
+                ORDER BY total_sales_amount DESC
             """)
             product_sales = cursor.fetchall()
 
-            # ✍️ Logging the action
             log_manager_action("Viewed Sales Report", "Checked overall and product-wise sales", conn)
 
         return render_template("manager_sales_report.html", sales=sales, product_sales=product_sales)
 
     return redirect('/login')
-
-
 
 
 # ------------------- Loyal Customers -------------------

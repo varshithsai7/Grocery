@@ -1,95 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Manager Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@500;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(to right, #fce4ec, #f3e5f5);
-            font-family: 'Josefin Sans', sans-serif;
-            color: #333;
-            padding: 50px 20px;
-        }
+  <meta charset="UTF-8">
+  <title>🌈 Manager Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-image: url('https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=1950&q=80');
+      background-size: cover;
+      background-position: center;
+      font-family: 'Josefin Sans', sans-serif;
+      color: #333;
+      padding: 60px 20px;
+      backdrop-filter: blur(4px);
+    }
 
-        h1 {
-            text-align: center;
-            color: #6C3483;
-            font-size: 3rem;
-            margin-bottom: 40px;
-            font-weight: bold;
-        }
+    .overlay {
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 1200px;
+      margin: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
 
-        .dashboard-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 25px;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
+    h1 {
+      text-align: center;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 3rem;
+      font-weight: bold;
+      margin-bottom: 40px;
+    }
 
-        .dashboard-link {
-            text-decoration: none;
-            display: block;
-            padding: 20px 30px;
-            background-color: #8e44ad;
-            color: white;
-            border-radius: 16px;
-            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            font-weight: 600;
-            text-align: center;
-            font-size: 1.1rem;
-        }
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 25px;
+    }
 
-        .dashboard-link:hover {
-            background-color: #9b59b6;
-            transform: translateY(-4px) scale(1.03);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
-        }
+    .dashboard-link {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #fff;
+      text-shadow: 1px 1px 2px #555;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      transition: transform 0.3s, box-shadow 0.3s, background 0.5s;
+    }
 
-        .logout {
-            display: block;
-            text-align: center;
-            margin: 50px auto 0;
-            font-weight: bold;
-            color: #e74c3c;
-            font-size: 1.1rem;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
+    .dashboard-link:nth-child(2) { background: linear-gradient(135deg, #a1c4fd, #c2e9fb); color: #003366; }
+    .dashboard-link:nth-child(3) { background: linear-gradient(135deg, #fbc2eb, #a6c1ee); }
+    .dashboard-link:nth-child(4) { background: linear-gradient(135deg, #fddb92, #d1fdff); color: #333; }
+    .dashboard-link:nth-child(5) { background: linear-gradient(135deg, #84fab0, #8fd3f4); }
+    .dashboard-link:nth-child(6) { background: linear-gradient(135deg, #fccb90, #d57eeb); }
+    .dashboard-link:nth-child(7) { background: linear-gradient(135deg, #e0c3fc, #8ec5fc); }
+    .dashboard-link:nth-child(8) { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+    .dashboard-link:nth-child(9) { background: linear-gradient(135deg, #89f7fe, #66a6ff); }
+    .dashboard-link:nth-child(10) { background: linear-gradient(135deg, #ffecd2, #fcb69f); }
+    .dashboard-link:nth-child(11) { background: linear-gradient(135deg, #c2e9fb, #a1c4fd); }
 
-        .logout:hover {
-            color: #c0392b;
-            text-decoration: underline;
-        }
+    .dashboard-link:hover {
+      transform: translateY(-5px) scale(1.03);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+      text-decoration: none;
+    }
 
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 2rem;
-            }
+    .logout {
+      display: block;
+      text-align: center;
+      margin-top: 50px;
+      font-weight: bold;
+      color: #d63031;
+      font-size: 1.1rem;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
 
-            .dashboard-link {
-                font-size: 1rem;
-                padding: 16px;
-            }
-        }
-    </style>
+    .logout:hover {
+      color: #b71c1c;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .dashboard-link {
+        font-size: 1rem;
+        padding: 16px;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div class="overlay">
     <h1>🧑‍💼 Manager Dashboard</h1>
+
     <div class="dashboard-container">
-        <a class="dashboard-link" href="{{ url_for('manager_search_products') }}">🔍 Search Products</a>
-        <a class="dashboard-link" href="{{ url_for('manager_sales_report') }}">📈 View Sales Report</a>
-        <a class="dashboard-link" href="{{ url_for('manager_loyal_customers') }}">🎁 Loyal Customers</a>
-        <a class="dashboard-link" href="{{ url_for('manager_audit_log') }}">📝 View Audit Log</a>
-        <a class="dashboard-link" href="{{ url_for('manager_add_product') }}">➕ Add New Product</a>
-        <a class="dashboard-link" href="{{ url_for('manager_low_stock') }}">📉 Low Stock Alerts</a>
-        <a class="dashboard-link" href="{{ url_for('manager_restock') }}">🔁 Restock Products</a>
-        <a class="dashboard-link" href="{{ url_for('manager_view_products') }}">🧾 View All Products</a>
-        <a class="dashboard-link" href="{{ url_for('manager_update_interface') }}">🛠️ Modify Products</a>
-        <a class="dashboard-link" href="{{ url_for('manager_expired_products') }}">⛔ Expired Products</a>
+      <a class="dashboard-link" href="{{ url_for('manager_search_products') }}">🔍 Search Products</a>
+      <a class="dashboard-link" href="{{ url_for('manager_sales_report') }}">📈 View Sales Report</a>
+      <a class="dashboard-link" href="{{ url_for('manager_loyal_customers') }}">🎁 Loyal Customers</a>
+      <a class="dashboard-link" href="{{ url_for('manager_audit_log') }}">📝 View Audit Log</a>
+      <a class="dashboard-link" href="{{ url_for('manager_add_product') }}">➕ Add New Product</a>
+      <a class="dashboard-link" href="{{ url_for('manager_low_stock') }}">📉 Low Stock Alerts</a>
+      <a class="dashboard-link" href="{{ url_for('manager_restock') }}">🔁 Restock Products</a>
+      <a class="dashboard-link" href="{{ url_for('manager_view_products') }}">🧾 View All Products</a>
+      <a class="dashboard-link" href="{{ url_for('manager_update_interface') }}">🛠️ Modify Products</a>
+      <a class="dashboard-link" href="{{ url_for('manager_expired_products') }}">⛔ Expired Products</a>
+      <a class="dashboard-link" href="{{ url_for('update_minute_details_select') }}">🖼️ Update Details</a>
     </div>
+
     <a class="logout" href="{{ url_for('logout') }}">🚪 Logout</a>
+  </div>
 </body>
 </html>
