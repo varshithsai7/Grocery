@@ -4,15 +4,20 @@
     <meta charset="UTF-8">
     <title>Update Products - Manager</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+    <!-- 🌸 Elegant fonts added -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+
     <style>
     body {
         background-color: #f8f0fc;
-        font-family: 'Segoe UI', sans-serif;
+        font-family: 'Poppins', sans-serif;
         color: #333;
         padding: 30px;
     }
 
     h2 {
+        font-family: 'Playfair Display', serif;
         color: #6C3483;
         margin-bottom: 20px;
         text-align: center;
@@ -42,7 +47,7 @@
     }
 
     th, td {
-        padding: 8px 10px; /* reduced padding */
+        padding: 8px 10px;
         text-align: center;
         border-bottom: 1px solid #ddd;
         font-size: 15px;
@@ -175,8 +180,7 @@
         text-decoration: underline;
         color: #512e5f;
     }
-</style>
-
+    </style>
 </head>
 <body>
     <h2>🛠️ Update Products</h2>
@@ -259,6 +263,6 @@
     </div>
 
     <a href="{{ url_for('manager_dashboard') }}">⬅ Back to Dashboard</a>
-    
+
 </body>
 </html>

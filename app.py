@@ -918,6 +918,24 @@ def manager_update_interface():
 
 
 
+# manager see last actions
+@app.route('/manager/last_actions')
+def manager_last_actions():
+    if 'role' in session and session['role'] == 'manager':
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT product_id, action, prev_name, prev_price, prev_stock, prev_unit, prev_expiry, timestamp
+                FROM last_action
+                ORDER BY timestamp DESC
+                LIMIT 20
+            """)
+            actions = cursor.fetchall()
+        return render_template('manager_last_actions.html', actions=actions)
+    return redirect(url_for('login'))
+
+
+
 
 # ------------------- Search Products -------------------
 @app.route('/manager/search-products', methods=['GET', 'POST'])

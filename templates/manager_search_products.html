@@ -1,104 +1,147 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Search Products - Manager</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #fbf0fc;
-            font-family: 'Segoe UI', sans-serif;
-            padding: 40px;
-            color: #333;
-        }
+  <meta charset="UTF-8">
+  <title>Search Products - Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      font-family: 'Segoe UI', sans-serif;
+      background: url('/static/images/solar.png') center center fixed;
+      background-size: contain; /* shows full image without zooming */
+      background-repeat: no-repeat;
+      background-color: #000; /* fallback for gaps */
+      min-height: 100vh;
+      color: #fff;
+    }
 
-        h2 {
-            text-align: center;
-            color: #8e44ad;
-            margin-bottom: 30px;
-        }
+    .search-container {
+      background: rgba(255, 255, 255, 0.92);
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 800px;
+      margin: auto;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+    }
 
-        form {
-            max-width: 600px;
-            margin: 0 auto;
-            display: flex;
-            gap: 10px;
-        }
+    h2 {
+      text-align: center;
+      color: #4a148c;
+      font-weight: bold;
+      margin-bottom: 25px;
+      font-size: 2rem;
+    }
 
-        input[type="text"] {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #d9b3e6;
-            border-radius: 8px;
-        }
+    form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
 
-        button {
-            padding: 10px 20px;
-            background-color: #8e44ad;
-            border: none;
-            color: white;
-            font-weight: bold;
-            border-radius: 8px;
-        }
+    input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #7e57c2;
+      border-radius: 10px;
+      background-color: #fff;
+    }
 
-        ul {
-            margin-top: 30px;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
-        }
+    button {
+      padding: 12px 20px;
+      background: linear-gradient(to right, #8e44ad, #6a1b9a);
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      transition: transform 0.2s ease;
+    }
 
-        li {
-            background: #ffffff;
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-        }
+    button:hover {
+      transform: scale(1.05);
+      background: linear-gradient(to right, #ba68c8, #4a148c);
+    }
 
-        .no-results {
-            text-align: center;
-            margin-top: 30px;
-            color: #a93226;
-            font-weight: bold;
-        }
+    ul {
+      padding: 0;
+      list-style: none;
+    }
 
-        a {
-            display: block;
-            margin-top: 40px;
-            text-align: center;
-            color: #8e44ad;
-            text-decoration: none;
-        }
+    li {
+      background: rgba(255, 255, 255, 0.95);
+      color: #333;
+      border-left: 8px solid #7b1fa2;
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+    }
 
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
+    img {
+      max-height: 100px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .no-results {
+      text-align: center;
+      margin-top: 30px;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 15px;
+      border-radius: 10px;
+      color: #c62828;
+      font-weight: bold;
+    }
+
+    a {
+      display: block;
+      margin-top: 40px;
+      text-align: center;
+      color: #6a1b9a;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: #ab47bc;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 576px) {
+      form {
+        flex-direction: column;
+      }
+    }
+  </style>
 </head>
 <body>
-    <h2>🔍 Search Products</h2>
+  <div class="search-container">
+    <h2>🔭 Explore Products</h2>
     <form method="post">
-        <input type="text" name="query" placeholder="Enter Product ID or Name" required>
-        <button type="submit">Search</button>
+      <input type="text" name="query" placeholder="Enter Product ID or Name" required>
+      <button type="submit">Search</button>
     </form>
 
     {% if products %}
-        <ul>
-            {% for p in products %}
-                <li>
-                    <img src="{{ p['image_url'] }}" alt="{{ p['name'] }}" style="max-height: 100px; border-radius: 8px;"><br>
-
-                    <strong>{{ p['name'] }}</strong><br>
-                    ₹{{ p['price'] }} | {{ p['stock'] }} {{ p['unit'] }} | Expiry: {{ p['expiry_date'] }}
-                </li>
-                
-            {% endfor %}
-        </ul>
+      <ul>
+        {% for p in products %}
+          <li>
+            <img src="{{ p['image_url'] or 'https://via.placeholder.com/100x100?text=No+Image' }}" alt="{{ p['name'] }}">
+            <div><strong>{{ p['name'] }}</strong></div>
+            <div>₹{{ p['price'] }} | {{ p['stock'] }} {{ p['unit'] }}</div>
+            <div>🗓️ Expiry: {{ p['expiry_date'] or 'N/A' }}</div>
+          </li>
+        {% endfor %}
+      </ul>
     {% elif query %}
-        <p class="no-results">⚠️ No products found for "<strong>{{ query }}</strong>"</p>
+      <p class="no-results">⚠️ No products found for "<strong>{{ query }}</strong>"</p>
     {% endif %}
 
     <a href="{{ url_for('manager_dashboard') }}">⬅ Back to Dashboard</a>
+  </div>
 </body>
 </html>
