@@ -1171,6 +1171,6 @@ def cashier_generate_bill():
 
 
 # Keep this always 💖
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True,threaded=False)
-
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0', port=5000, debug=True,threaded=False)
+# render will use gunicorn to run it
