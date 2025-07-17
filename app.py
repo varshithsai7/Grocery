@@ -11,7 +11,9 @@ from io import BytesIO
 
 
 app = Flask("MyGRow", static_url_path='/static')
-app.secret_key = 'varsh'
+import os
+# app.secret_key = 'varsh'
+app.secret_key = os.environ.get('SECRET_KEY', 'fallback-key')
 
 
 # explicit closing
@@ -1171,6 +1173,6 @@ def cashier_generate_bill():
 
 
 # Keep this always 💖
-# if __name__ == '__main__':
-#     app.run(host='0.0.0.0', port=5000, debug=True,threaded=False)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True,threaded=False)
 # render will use gunicorn to run it
